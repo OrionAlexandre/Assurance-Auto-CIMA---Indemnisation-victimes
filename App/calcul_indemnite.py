@@ -1,7 +1,9 @@
+import decimal
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap, QIcon, QAction
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QLabel, QPushButton, \
-    QLineEdit, QComboBox, QCheckBox, QDialog, QGridLayout, QMessageBox, QMenu
+    QLineEdit, QComboBox, QCheckBox, QDialog, QGridLayout, QMessageBox, QMenu, QListWidget
 
 from custom_widget import WidgetContainer, RepartitionWidget, CustomLabelName, ProfilLabel, ScrollableWidget, \
     CustomCalculusQWidget, ListVictime, ListConjoints, ListEnfants, ListAscendants, ListCollateraux, \
@@ -9,804 +11,1027 @@ from custom_widget import WidgetContainer, RepartitionWidget, CustomLabelName, P
 from api import data_contoller, format_nombre_fr, laod_default_personne_alive, error_logger
 from database_manager import rechercher_personne_par_id, ajouter_personne_data_base, Personne
 
-from algorithm.tables import SituationMatrimoniale, smig_pays_cima_2025, AGE_LIMITE, NiveauPrejudice
+from algorithm.tables import SituationMatrimoniale, smig_pays_cima_2025, AGE_LIMITE, NiveauPrejudice, list_pays_cima
 from algorithm.profils import Enfant, Conjoint, Ascendant, Collateral
 
 from algorithm.alive import FraisDeTraitement, IncapaciteTemporaire, IncapacitePermanente, AssistanceTiercePersonne, \
     PretiumDoloris, PrejudiceEsthetique, PrejudicePerteDeGainsProfessinnelsFuturs, PrejudiceScolaire, \
     PrejudiceMoralConjoint
 
+from database_manager import supprimer_et_reorganiser_ids
+
 
 class NouveauProfil(QDialog):
-    def __init__(self):
-
-        if data_contoller.load_profil_alive:
-            data_contoller.call_fonction(key="close_profil_alive")
-        else:
-            data_contoller.call_fonction(key="close_profil_dead")
-        pass
-
+    def __init__(self, personne: Personne | None = None, personne_indexe: int = 0):
         super().__init__()
-        self.setStyleSheet("""background-color: qlineargradient(
-                x1:0, y1:0, x2:1, y2:1,
-                stop:0 #B9D5F9,
-                stop:0.6 #e8f2ff,
-                stop:1 #d0e3ff
-            );
-            border-radius: 8px;
-            """)
+
         self.setModal(True)
-        self.setFixedSize(900, 770)
-        icon = QIcon(QPixmap("assets/078-android.png"))
-        self.setWindowIcon(icon)
 
-        self.__nouvelle_liste_enfants = []
-        self.__nouvelle_liste_ascendants = []
-        self.__nouvelle_liste_conjoints = []
-        self.__nouvelle_liste_collateraux = []
+        if personne is None:
+            personne_ = Personne(
+                nom="",
+                prenom="",
+                age=00,
+                sexe="M",
+                profession="",
+                salaire=0,
+                age_limite=60,
+                situation_matrimoniale=SituationMatrimoniale.CELIBATAIRE,
+                conjoints=[],
+                enfants=[],
+                ascendants=[],
+                collateraux=[],
+                pays_residence="Togo",
+                pays_sinistre="Togo",
+            )
+            self.personne = personne_
+            self.modification = False
 
-        self.entries = self.Entries()
-        self.buttons = self.ButtonGroup()
+            if data_contoller.load_profil_alive:
+                data_contoller.call_fonction(key="close_profil_alive")
+            else:
+                data_contoller.call_fonction(key="close_profil_dead")
+        else:
+            self.personne = personne
+            self.modification = True
+            self.personne_index = personne_indexe
 
-        main_layout = QHBoxLayout(self)
+        self.enfants = self.personne.enfants
+        self.conjoints = self.personne.conjoints
+        self.ascendants = self.personne.ascendants
+        self.collateraux = self.personne.collateraux
 
-        # Widget de mise en arroère-plan.
-        widget_back = QWidget()
-        main_layout.addWidget(widget_back)
-
-
-        widget_back.setStyleSheet("""
-            QLabel {
-                color: #31588A;
-                margin-bottom: 3px;
-                font-size: 14px;
-            }
-
-            QWidget {
-                background-color: transparent;
-            }
-
-            QLineEdit {
-                background-color: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #99C0F1,
-                    stop:0.6 #B3CAE9,
-                    stop:1 #ADC8F1);
-                color: #060270;
-                border-radius: 5px;
-                font-size: 15; font-weight: bold;
-                margin-bottom: 7px;
-                padding: 5px 10px 5px 5px;  /* Top, Right, Bottom, Left */
-            }
-
-            QCheckBox {
-                background-color: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #99C0F1,
-                    stop:0.6 #B3CAE9,
-                    stop:1 #ADC8F1);
-                font-size: 18; font-weight: bold; color: #31588A;
-                border: 1px solid #7A9CC6;
-                margin-bottom: 7px;
-                padding: 5px 10px 5px 5px;
-            }
+        self.list_view_enfant = QListWidget()
+        self.list_view_conjoint = QListWidget()
+        self.list_view_ascendant = QListWidget()
+        self.list_view_collateral = QListWidget()
 
 
-            QComboBox {
-                background-color: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #99C0F1,
-                    stop:0.6 #B3CAE9,
-                    stop:1 #ADC8F1);
-                color: #060270;
-                border-radius: 5px;
-                font-size: 15px; 
-                font-weight: bold;
-                border: 1px solid #7A9CC6;
-                margin-bottom: 7px;
-                padding: 5px 10px 5px 5px;
-                min-width: 100px;
-            }
-
-            QComboBox::drop-down {
-                subcontrol-origin: padding;
-                subcontrol-position: top right;
-                width: 40px;
-                border-left: 1px solid #7A9CC6;
-                border-top-right-radius: 5px;
-                border-bottom-right-radius: 5px;
-                background: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #99C0F1,
-                    stop:0.6 #B3CAE9,
-                    stop:1 #ADC8F1);
-            }
-
-            QComboBox::down-arrow {
-                image: url(assets/icons8-box-move-down-32-2.png);
-                width: 12px;
-                height: 12px;
-            }
-
-            QComboBox:hover {
-                border: 1px solid #4A7CBF;
-            }
-
-            QComboBox:on {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #89B0E1,
-                    stop:1 #9DB8E1);
-                color: #060270;
-            }
-
-            QComboBox:disabled {
-                background: #D3D3D3;
-                color: #808080;
-            }
-
-            /* [MODIFICATIONS UNIQUEMENT ICI] */
-            QComboBox QAbstractItemView {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #99C0F1,
-                    stop:0.6 #B3CAE9,
-                    stop:1 #ADC8F1);
-                color: #060270;
-                selection-background-color: #4A7CBF;
-                selection-color: white;  /* Changé pour meilleure lisibilité */
-                border: 1px solid #7A9CC6;
-                border-radius: 5px;
-                outline: none;
-                font-size: 14px;
-                padding: 4px;
-            }
-
-            /* Style des items au survol */
-            QComboBox QAbstractItemView::item:hover {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #7A9CC6,
-                    stop:1 #4A7CBF);
-                color: white;
-                font-weight: bold;
-            }
-
-            /* Style des items sélectionnés au survol */
-            QComboBox QAbstractItemView::item:selected:hover {
-                background: #2A5C8B;
-                color: white;
-            } 
-        """)
-
-        principal_layout = QVBoxLayout(widget_back)
-
-        # Barre de séparation.
-        self.__separator = QWidget()
-        self.__separator.setFixedHeight(7)
-        # self.__separator.setFixedWidth(1)
-        self.__separator.setStyleSheet("background-color: #060270")
-        principal_layout.addWidget(self.__separator)
-
-        label_entete = QLabel("Création d'un nouveau profil")
-        label_entete.setStyleSheet("""
+        self.main_layout = QVBoxLayout(self)
+        self.setStyleSheet("""
                     QLabel {
-                        color: #34495e;
-                        font-size: 16px;
-                        font-weight: 600;
-                        padding-bottom: 8px;
-                        border-bottom: 2px solid #3498db;  /* Ligne de séparation bleue */
-                        margin-bottom: 15px;
+                        background-color: transparent;
+                        color: #31588A;
+                        margin-bottom: 3px;
+                        font-size: 14px;
                     }
-                """)
-        label_entete.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        principal_layout.addWidget(label_entete)
 
+                    QWidget {
+                        background-color: qlineargradient(
+                                x1:0, y1:0, x2:1, y2:1,
+                                stop:0 #B9D5F9,
+                                stop:0.6 #e8f2ff,
+                                stop:1 #d0e3ff
+                            );
+                    }
+
+                    QLineEdit {
+                        background-color: qlineargradient(
+                            x1:0, y1:0, x2:1, y2:1,
+                            stop:0 #99C0F1,
+                            stop:0.6 #B3CAE9,
+                            stop:1 #ADC8F1);
+                        color: #060270;
+                        border-radius: 5px;
+                        font-size: 15; font-weight: bold;
+                        margin-bottom: 7px;
+                        padding: 5px 10px 5px 5px;  /* Top, Right, Bottom, Left */
+                    }
+
+                    QCheckBox {
+                        background-color: qlineargradient(
+                            x1:0, y1:0, x2:1, y2:1,
+                            stop:0 #99C0F1,
+                            stop:0.6 #B3CAE9,
+                            stop:1 #ADC8F1);
+                        font-size: 18; font-weight: bold; color: #31588A;
+                        border: 1px solid #7A9CC6;
+                        margin-bottom: 7px;
+                        padding: 5px 10px 5px 5px;
+                    }
+
+
+                    QComboBox {
+                        background-color: qlineargradient(
+                            x1:0, y1:0, x2:1, y2:1,
+                            stop:0 #99C0F1,
+                            stop:0.6 #B3CAE9,
+                            stop:1 #ADC8F1);
+                        color: #060270;
+                        border-radius: 5px;
+                        font-size: 15px; 
+                        font-weight: bold;
+                        border: 1px solid #7A9CC6;
+                        margin-bottom: 7px;
+                        padding: 5px 10px 5px 5px;
+                        min-width: 100px;
+                    }
+
+                    QComboBox::drop-down {
+                        subcontrol-origin: padding;
+                        subcontrol-position: top right;
+                        width: 40px;
+                        border-left: 1px solid #7A9CC6;
+                        border-top-right-radius: 5px;
+                        border-bottom-right-radius: 5px;
+                        background: qlineargradient(
+                            x1:0, y1:0, x2:1, y2:1,
+                            stop:0 #99C0F1,
+                            stop:0.6 #B3CAE9,
+                            stop:1 #ADC8F1);
+                    }
+
+                    QComboBox::down-arrow {
+                        image: url(assets/icons8-box-move-down-32-2.png);
+                        width: 12px;
+                        height: 12px;
+                    }
+
+                    QComboBox:hover {
+                        border: 1px solid #4A7CBF;
+                    }
+
+                    QComboBox:on {
+                        background: qlineargradient(
+                            x1:0, y1:0, x2:1, y2:1,
+                            stop:0 #89B0E1,
+                            stop:1 #9DB8E1);
+                        color: #060270;
+                    }
+
+                    QComboBox:disabled {
+                        background: #D3D3D3;
+                        color: #808080;
+                    }
+
+                    /* [MODIFICATIONS UNIQUEMENT ICI] */
+                    QComboBox QAbstractItemView {
+                        background: qlineargradient(
+                            x1:0, y1:0, x2:1, y2:1,
+                            stop:0 #99C0F1,
+                            stop:0.6 #B3CAE9,
+                            stop:1 #ADC8F1);
+                        color: #060270;
+                        selection-background-color: #4A7CBF;
+                        selection-color: white;  /* Changé pour meilleure lisibilité */
+                        border: 1px solid #7A9CC6;
+                        border-radius: 5px;
+                        outline: none;
+                        font-size: 14px;
+                        padding: 4px;
+                    }
+
+                    /* Style des items au survol */
+                    QComboBox QAbstractItemView::item:hover {
+                        background: qlineargradient(
+                            x1:0, y1:0, x2:1, y2:1,
+                            stop:0 #7A9CC6,
+                            stop:1 #4A7CBF);
+                        color: white;
+                        font-weight: bold;
+                    }
+
+                    /* Style des items sélectionnés au survol */
+                    QComboBox QAbstractItemView::item:selected:hover {
+                        background: #2A5C8B;
+                        color: white;
+                    } 
+
+                    QListWidget {
+                                    background: qlineargradient(
+                                        x1: 0, y1: 0,
+                                        x2: 1, y2: 1,
+                                        stop: 0 #1f1f4d,
+                                        stop: 0.6 #2f2ca0,
+                                        stop: 1 #3131b8
+                                    );
+                                    border: none;  /* Supprime toute bordure visible */
+                                    border-radius: 8px;
+                                    padding: 6px;
+                                    color: #f0f3ff;
+                                    font-weight: 500;
+                                }
+
+                                QListWidget::item {
+                                    background-color: transparent;
+                                    padding: 8px 14px;
+                                    border: none;
+                                    border-bottom: 1px solid rgba(240, 240, 240, 0.05);
+                                }
+
+                                QListWidget::item:hover {
+                                    background-color: rgba(255, 255, 255, 0.05);
+                                }
+
+                                QListWidget::item:selected {
+                                    background-color: rgba(255, 255, 255, 0.12);
+                                    color: #e3f3ff;
+                                    border-left: 3px solid #5B95D6;
+                                }
+
+                                QScrollBar:vertical {
+                                    background: transparent;
+                                    width: 6px;
+                                    margin: 0px;
+                                    padding: 0px;
+                                    border: none;
+                                }
+
+                                QScrollBar::handle:vertical {
+                                    background: #5B95D6;
+                                    border-radius: 3px;
+                                    min-height: 20px;
+                                }
+
+                                QScrollBar::add-line:vertical,
+                                QScrollBar::sub-line:vertical {
+                                    height: 0px;
+                                    background: none;
+                                }
+
+                                QScrollBar::add-page:vertical,
+                                QScrollBar::sub-page:vertical {
+                                    background: none;
+                                }
+                """)
+
+        label_entete = QLabel("Modification du profil")
+        label_entete.setStyleSheet("""
+                            QLabel {
+                                background-color: transparent;
+                                color: #34495e;
+                                font-size: 16px;
+                                font-weight: 600;
+                                padding-bottom: 8px;
+                                border-bottom: 2px solid #3498db;  /* Ligne de séparation bleue */
+                                margin-bottom: 15px;
+                            }
+                        """)
+        label_entete.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.main_layout.addWidget(label_entete)
 
         # La layout formulaire de la victime
         formulaire_layout = QGridLayout()
-        principal_layout.addLayout(formulaire_layout)
+        self.main_layout.addLayout(formulaire_layout)
 
+        self.profil_nom_le = QLineEdit()
+        self.profil_prenom_le = QLineEdit()
+        self.profil_age_le = QLineEdit()
+
+        self.profil_profession_le = QLineEdit()
+        self.profil_salaire_le = QLineEdit()
+        self.profil_matrimoniale_cb = QComboBox()
+
+        self.profil_pays_residence_cb = QComboBox()
+        self.profil_pays_sinistre_cb = QComboBox()
+        self.profil_sexe_cb = QComboBox()
+
+        self.profil_sexe_cb.addItems(["M", "F"])
+        self.profil_matrimoniale_cb.addItems([SituationMatrimoniale.CELIBATAIRE,
+                                              SituationMatrimoniale.MARIE_E,
+                                              SituationMatrimoniale.DIVORCE,
+                                              SituationMatrimoniale.VEUF_VE])
+        self.profil_pays_residence_cb.addItems(list_pays_cima)
+        self.profil_pays_sinistre_cb.addItems(list_pays_cima)
+
+        # Définition des valeurs par défauts
+        self.profil_nom_le.setText(self.personne.nom)
+        self.profil_prenom_le.setText(self.personne.prenom)
+        self.profil_age_le.setText(f"{self.personne.age}")
+        self.profil_profession_le.setText(self.personne.profession)
+        self.profil_salaire_le.setText(f"{float(self.personne.salaire)}")
+        self.profil_matrimoniale_cb.setCurrentText(self.personne.situation_matrimoniale)
+        self.profil_sexe_cb.setCurrentText(self.personne.sexe)
+        self.profil_pays_residence_cb.setCurrentText(self.personne.pays_residence)
+        self.profil_pays_sinistre_cb.setCurrentText(self.personne.pays_sinistre)
+
+        # ~Mise en place des widgets pour le profil de la victime.
         column = 0
         for label in [QLabel("Nom :"), QLabel("Prénom :"), QLabel("Age :")]:
             formulaire_layout.addWidget(label, 0, column)
             column += 1
 
         column = 0
-        for entry in [self.entries.profil_nom_le, self.entries.profil_prenom_le, self.entries.profil_age_le]:
+        for entry in [self.profil_nom_le, self.profil_prenom_le, self.profil_age_le]:
             formulaire_layout.addWidget(entry, 1, column)
             column += 1
 
         column = 0
-        for label in [QLabel("Profession :"), QLabel("Salaire / Bourse mensuelle :"), QLabel("Situation matrimoniale :")]:
+        for label in [QLabel("Profession :"), QLabel("Salaire / Bourse mensuelle :"),
+                      QLabel("Situation matrimoniale :")]:
             formulaire_layout.addWidget(label, 2, column)
             column += 1
 
         column = 0
-        for entry in [self.entries.profil_profession_le, self.entries.profil_salaire_le,
-                      self.entries.profil_matrimoniale_le]:
+        for entry in [self.profil_profession_le, self.profil_salaire_le,
+                      self.profil_matrimoniale_cb]:
             formulaire_layout.addWidget(entry, 3, column)
             column += 1
 
         column = 0
-        for label in [QLabel("Pays de résidence :"), QLabel("Pays lieu du sinistre :")]:
+        for label in [QLabel("Pays de résidence :"), QLabel("Pays lieu du sinistre :"), QLabel("Sexe :")]:
             formulaire_layout.addWidget(label, 4, column)
             column += 1
 
         column = 0
-        for entry in [self.entries.profil_pays_residence_le, self.entries.profil_pays_sinistre_le,
-                      self.entries.profil_sexe_le]:
+        for entry in [self.profil_pays_residence_cb, self.profil_pays_sinistre_cb,
+                      self.profil_sexe_cb]:
             formulaire_layout.addWidget(entry, 5, column)
             column += 1
 
-        formulaire_layout.addWidget(self.buttons.ajouter_profil, 6, 2)
+        # Parties des ayants droit.
+        label_entete = QLabel("Les ayants droit")
+        label_entete.setStyleSheet("""
+                                    QLabel {
+                                        background-color: transparent;
+                                        color: #34495e;
+                                        font-size: 16px;
+                                        font-weight: 600;
+                                        padding-bottom: 8px;
+                                        border-bottom: 2px solid #3498db;  /* Ligne de séparation bleue */
+                                        margin-bottom: 15px;
+                                    }
+                                """)
+        label_entete.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.main_layout.addWidget(label_entete)
 
-        # Barre de séparation.
-        self.__separator = QWidget()
-        self.__separator.setFixedHeight(7)
-        # self.__separator.setFixedWidth(1)
-        self.__separator.setStyleSheet("background-color: #060270")
-        principal_layout.addWidget(self.__separator)
+        ayants_label_layout = QHBoxLayout()
+        self.main_layout.addLayout(ayants_label_layout)
 
-        # Ajout d'un layout pour les profils des ayants droit de la victime.
-        label_ayants_droit = QLabel("Les ayants droits")
-        label_ayants_droit.setStyleSheet("""
-            QLabel {
-                color: #34495e;
-                font-size: 16px;
-                font-weight: 600;
-                padding-bottom: 8px;
-                border-bottom: 2px solid #3498db;  /* Ligne de séparation bleue */
-                margin-bottom: 15px;
+        ayants_label_layout.addWidget(QLabel("Choisir les ayants droit à afficher : "))
+        ayant_droit_types = QComboBox()
+        ayant_droit_types.addItems(["Ascendants", "Collatéraux", "Conjoints", "Enfants/Descants"])
+        ayant_droit_types.currentTextChanged.connect(self.update_list_view)
+        ayants_label_layout.addWidget(ayant_droit_types)
+
+        # Ajout d'un autre layout pour l'affichage et la modification des réusltats.
+        result_lit_layout = QHBoxLayout()
+        self.main_layout.addLayout(result_lit_layout)
+
+        # Utilisation d'une stack layout pour l'affichage des listes.
+        self.list_view_widget = QStackedWidget()
+        result_lit_layout.addWidget(self.list_view_widget)
+
+        self.ascendants_list = QListWidget()
+        self.collateraux_list = QListWidget()
+        self.conjoints_list = QListWidget()
+        self.enfants_list = QListWidget()
+
+        # Insertion des données.
+        for ascendant in self.personne.ascendants:
+            self.ascendants_list.addItem(
+                f"Nom : {ascendant.nom}\nPrénom : {ascendant.prenom}\n Age : {ascendant.age} ans\nSexe: {ascendant.sexe}")
+
+        for conjoint in self.personne.conjoints:
+            self.conjoints_list.addItem(
+                f"Nom : {conjoint.nom}\nPrénom : {conjoint.prenom}\nAge : {conjoint.age} ans\nSexe: {conjoint.sexe}")
+
+        for individu in self.personne.enfants:
+            self.enfants_list.addItem(
+                f"Nom : {individu.nom} \nPrénom : {individu.prenom} \nAge: {individu.age} ans \nSexe : {individu.sexe} \nPoursuit les études : {"Oui" if individu.poursuit_etudes else "Non"} \nHandicap majeur à vie : {"Oui" if individu.handicap_majeur else "Non"}")
+
+        for collateral in self.personne.collateraux:
+            self.collateraux_list.addItem(
+                f"Nom : {collateral.nom}\nAge : {collateral.prenom}\nSexe : {collateral.age} ans")
+
+        # Ajout des layouts enfants.
+        for widget in [self.ascendants_list, self.collateraux_list, self.conjoints_list, self.enfants_list]:
+            self.list_view_widget.addWidget(widget)
+
+        self.list_view_widget.setCurrentWidget(self.ascendants_list)
+
+        # Ajout d'une QGridLayout pour les données modifiables.
+        data_grid_layout = QGridLayout()
+        result_lit_layout.addLayout(data_grid_layout)
+
+        self.nouveau_nom = QLineEdit()
+        self.nouveau_prenom = QLineEdit()
+        self.nouvel_age = QLineEdit()
+
+        self.nouveau_sexe = QComboBox()
+        self.nouveau_sexe.addItems(["M", "F"])
+        self.nouveau_etudes = QCheckBox("Poursuit les études.")
+        self.nouveau_handicap_majeur = QCheckBox("Handicap majeur.")
+
+        self.nouveau_orphelin_double = QCheckBox("Orphelin double.")
+
+        data_grid_layout.addWidget(QLabel("Nom :"), 0, 0)
+        data_grid_layout.addWidget(QLabel("Prénom :"), 0, 1)
+
+        data_grid_layout.addWidget(self.nouveau_nom, 1, 0)
+        data_grid_layout.addWidget(self.nouveau_prenom, 1, 1)
+
+        data_grid_layout.addWidget(QLabel("Age :"), 2, 0)
+        data_grid_layout.addWidget(QLabel("Sexe :"), 2, 1)
+
+        data_grid_layout.addWidget(self.nouvel_age, 3, 0)
+        data_grid_layout.addWidget(self.nouveau_sexe, 3, 1)
+
+        data_grid_layout.addWidget(self.nouveau_etudes, 4, 0, 1, 2)
+        data_grid_layout.addWidget(self.nouveau_handicap_majeur, 5, 0, 1, 2)
+        data_grid_layout.addWidget(self.nouveau_orphelin_double, 6, 0, 1, 2)
+
+        self.nouveau_etudes.setDisabled(True)
+        self.nouveau_handicap_majeur.setDisabled(True)
+        self.nouveau_orphelin_double.setDisabled(True)
+
+        self.type__ = "Ascendant"
+
+        self.ajouter_individu_but = QPushButton("➕Ajouter")
+        self.ajouter_individu_but.setStyleSheet("""
+                                                QPushButton {
+                                                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                        stop:0 #2EA44F,       /* Vert GitHub vif */
+                                                        stop:1 #22863A);      /* Vert GitHub foncé */
+                                                    border: 1px solid #2EA44F;
+                                                    border-radius: 6px;
+                                                    color: white;             /* Texte blanc */
+                                                    font-weight: 600;         /* Gras moyen */
+                                                    padding: 5px;
+                                                    font-size: 12px;
+                                                }
+
+                                                QPushButton:hover {
+                                                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                        stop:0 #34D058,       /* Vert GitHub clair (survol) */
+                                                        stop:1 #28A745);     /* Vert GitHub moyen */
+                                                    border-color: #34D058;
+                                                }
+
+                                                QPushButton:pressed {
+                                                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                        stop:0 #22863A,      /* Vert foncé */
+                                                        stop:1 #176F2C);     /* Vert très foncé */
+                                                }
+                                            """)
+        self.ajouter_individu_but.clicked.connect(lambda: self.ajouter_individu(self.type_))
+        data_grid_layout.addWidget(self.ajouter_individu_but, 7, 0, 1, 2)
+
+        self.validate_but = QPushButton("💾Enregistrer les modifications")
+        self.validate_but.setFixedWidth(253)
+        self.validate_but.setStyleSheet("""
+                                                QPushButton {
+                                                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                        stop:0 #0366d6,       /* Bleu GitHub vif */
+                                                        stop:1 #035fc7);      /* Bleu GitHub foncé */
+                                                    border: 1px solid #0366d6;
+                                                    border-radius: 6px;
+                                                    color: white;             /* Texte blanc */
+                                                    font-weight: 600;         /* Gras moyen */
+                                                    padding: 5px;
+                                                    font-size: 12px;
+                                                }
+
+                                                QPushButton:hover {
+                                                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                        stop:0 #1384ff,       /* Bleu GitHub clair (survol) */
+                                                        stop:1 #0374e8);      /* Bleu GitHub moyen */
+                                                    border-color: #1384ff;
+                                                }
+
+                                                QPushButton:pressed {
+                                                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                        stop:0 #035fc7,       /* Bleu foncé */
+                                                        stop:1 #0255b3);      /* Bleu très foncé */
+                                                }
+                                            """)
+        self.validate_but.clicked.connect(self.valider_enregistrement)
+        self.main_layout.addWidget(self.validate_but)
+
+        self.ascendants_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # Pour le click contextuel.
+        self.collateraux_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # Pour le click contextuel.
+        self.conjoints_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # Pour le click contextuel.
+        self.enfants_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # Pour le click contextuel.
+
+        # Connecter le signal de menu contextuel
+        self.ascendants_list.customContextMenuRequested.connect(self.supprimer_ascendant)
+        self.enfants_list.customContextMenuRequested.connect(self.supprimer_enfant)
+        self.conjoints_list.customContextMenuRequested.connect(self.supprimer_conjoint)
+        self.collateraux_list.customContextMenuRequested.connect(self.supprimer_collateral)
+
+    @property
+    def type_(self):
+        return self.type__
+
+    @type_.setter
+    def type_(self, type_: str):
+        self.type__ = type_
+
+    def update_list_view(self, value):
+        match value:
+            case "Ascendants":
+                self.list_view_widget.setCurrentWidget(self.ascendants_list)
+
+                self.nouveau_etudes.setDisabled(True)
+                self.nouveau_handicap_majeur.setDisabled(True)
+                self.nouveau_orphelin_double.setDisabled(True)
+                self.nouveau_sexe.setDisabled(False)
+                self.type_ = "Ascendant"
+
+            case "Enfants/Descants":
+                self.list_view_widget.setCurrentWidget(self.enfants_list)
+
+                self.nouveau_etudes.setDisabled(False)
+                self.nouveau_handicap_majeur.setDisabled(False)
+                self.nouveau_orphelin_double.setDisabled(False)
+                self.nouveau_sexe.setDisabled(False)
+                self.type_ = "Enfant"
+
+            case "Conjoints":
+                self.list_view_widget.setCurrentWidget(self.conjoints_list)
+
+                self.nouveau_etudes.setDisabled(True)
+                self.nouveau_handicap_majeur.setDisabled(True)
+                self.nouveau_orphelin_double.setDisabled(True)
+                self.nouveau_sexe.setDisabled(False)
+                self.type_ = "Conjoint"
+
+            case "Collatéraux":
+                self.list_view_widget.setCurrentWidget(self.collateraux_list)
+
+                self.nouveau_etudes.setDisabled(True)
+                self.nouveau_handicap_majeur.setDisabled(True)
+                self.nouveau_orphelin_double.setDisabled(True)
+                self.nouveau_sexe.setDisabled(True)
+                self.type_ = "Collatéral"
+
+        pass
+
+    def supprimer_enfant(self, position):
+
+        index = self.enfants_list.indexAt(position)
+
+        if not index.isValid():
+            return
+
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+        /* Style léger pour le menu contextuel */
+            QMenu {
+                background-color: white;
+                border: 1px solid #d0d7de;
+                border-radius: 6px;
+                padding: 4px;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                font-size: 13px;
+            }
+
+            QMenu::item {
+                padding: 6px 12px;
+                border-radius: 4px;
+                margin: 2px;
+                color: #24292f;
+            }
+
+            QMenu::item:selected {
+                background-color: #0969da;
+                color: white;
+            }
+
+            QMenu::item:disabled {
+                color: #8c959f;
+            }
+
+            QMenu::separator {
+                height: 1px;
+                background-color: #d0d7de;
+                margin: 4px 0;
             }
         """)
-        label_ayants_droit.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        principal_layout.addWidget(label_ayants_droit)
 
-        ayants_droit_layout = QHBoxLayout()
-        principal_layout.addLayout(ayants_droit_layout)
-
-        #===========================================================
-        enfants_layout = QGridLayout()
-        label_enfant = QLabel("Enfant")
-        label_enfant.setStyleSheet("font-weight: bold;")
-        label_enfant.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        enfants_layout.addWidget(label_enfant, 0, 0, 1, 3)
-
-        column = 0
-        for label in [QLabel("Nom :"), QLabel("Prénom :")]:
-            enfants_layout.addWidget(label, 1, column)
-            column += 1
-
-        column = 0
-        for label in [self.entries.enfant_nom_le, self.entries.enfant_prenom_le]:
-            enfants_layout.addWidget(label, 2, column)
-            column += 1
-
-        enfants_layout.addWidget(QLabel("Age :"), 3, 0)
-        enfants_layout.addWidget(self.entries.enfant_age_le, 4, 0)
-
-        enfants_layout.addWidget(QLabel("Sexe :"), 3, 1)
-        enfants_layout.addWidget(self.entries.enfant_sexe_le, 4, 1)
-
-        enfants_layout.addWidget(self.entries.enfant_etudes_le, 5, 0, 1, 2)
-        enfants_layout.addWidget(self.entries.enfant_handicap_le, 6, 0, 1, 2)
-
-        enfants_layout.addWidget(self.buttons.ajouter_enfant, 7, 0)
-        enfants_layout.addWidget(self.buttons.lister_enfant, 7, 1)
-
-        # ===========================================================
-        conjoints_layout = QGridLayout()
-        label_conjoint = QLabel("Conjoint")
-        label_conjoint.setStyleSheet("font-weight: bold;")
-        label_conjoint.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        conjoints_layout.addWidget(label_conjoint, 0, 0, 1, 2)
-
-        row = 1
-        for label in [QLabel("Nom :"), QLabel("Prénom :"), QLabel("Age:"), QLabel("Sexe :")]:
-            conjoints_layout.addWidget(label, row, 0)
-            row += 2
-
-        row = 2
-        for label in [self.entries.conjoint_nom_le, self.entries.conjoint_prenom_le,
-                      self.entries.conjoint_age_le, self.entries.conjoint_sexe_le]:
-            conjoints_layout.addWidget(label, row, 0, 1, 2)
-            row += 2
-
-        conjoints_layout.addWidget(self.buttons.ajouter_conjoint, 9, 0)
-        conjoints_layout.addWidget(self.buttons.lister_conjoint, 9, 1)
-
-        # ===========================================================
-        ascendants_layout = QGridLayout()
-        label_ascendant = QLabel("Ascendant")
-        label_ascendant.setStyleSheet("font-weight: bold;")
-        label_ascendant.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        ascendants_layout.addWidget(label_ascendant, 0, 0, 1, 2)
-
-        row = 1
-        for label in [QLabel("Nom :"), QLabel("Prénom :"), QLabel("Age:"), QLabel("Sexe:")]:
-            ascendants_layout.addWidget(label, row, 0)
-            row += 2
-
-        row = 2
-        for label in [self.entries.ascendant_nom_le, self.entries.ascendant_prenom_le, self.entries.ascendant_age_le, self.entries.ascendant_sexe_le]:
-            ascendants_layout.addWidget(label, row, 0, 1, 2)
-            row += 2
-
-        ascendants_layout.addWidget(self.buttons.ajouter_ascendant, 8, 0)
-        ascendants_layout.addWidget(self.buttons.lister_ascendant, 8, 1)
-
-        # ===========================================================
-        collarteraux_layout = QGridLayout()
-        label_collateral = QLabel("Collatéraux")
-        label_collateral.setStyleSheet("font-weight: bold;")
-        label_collateral.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        collarteraux_layout.addWidget(label_collateral, 0, 0, 1, 2)
-
-        row = 1
-        for label in [QLabel("Nom :"), QLabel("Prénom :"), QLabel("Age:")]:
-            collarteraux_layout.addWidget(label, row, 0)
-            row += 2
-
-        row = 2
-        for label in [self.entries.collateral_nom_le, self.entries.collateral_prenom_le, self.entries.collateral_age_le]:
-            collarteraux_layout.addWidget(label, row, 0, 1, 2)
-            row += 2
-
-        collarteraux_layout.addWidget(self.buttons.ajouter_collateral, 7, 0)
-        collarteraux_layout.addWidget(self.buttons.lister_collateral, 7, 1)
-
-        # ===========================================================
-        for layout in [enfants_layout, conjoints_layout, collarteraux_layout, ascendants_layout]:
-            ayants_droit_layout.addLayout(layout)
-
-            # Barre de séparation.
-            self.__separator = QWidget()
-            # self.__separator.setFixedHeight(30)
-            self.__separator.setFixedWidth(1)
-            self.__separator.setStyleSheet("background-color: #060270")
-            ayants_droit_layout.addWidget(self.__separator)
-
-        # Barre de séparation.
-        self.__separator = QWidget()
-        self.__separator.setFixedHeight(7)
-        # self.__separator.setFixedWidth(1)
-        self.__separator.setStyleSheet("background-color: #060270")
-        principal_layout.addWidget(self.__separator)
-
-        # ===========================================================
-        principal_layout.addWidget(self.buttons.ajouter_profil)
-        self.buttons.ajouter_profil.setFixedSize(250, 30)
-        self.buttons.ajouter_profil.setStyleSheet("""
-                                        QPushButton {
-                                            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                                stop:0 #2EA44F,       /* Vert GitHub vif */
-                                                stop:1 #22863A);      /* Vert GitHub foncé */
-                                            border: 1px solid #2EA44F;
-                                            border-radius: 6px;
-                                            color: white;             /* Texte blanc */
-                                            font-weight: 600;         /* Gras moyen */
-                                            margin-top: 7px;
-                                            padding: 5px;
-                                            font-size: 12px;
-                                        }
-
-                                        QPushButton:hover {
-                                            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                                stop:0 #34D058,       /* Vert GitHub clair (survol) */
-                                                stop:1 #28A745);     /* Vert GitHub moyen */
-                                            border-color: #34D058;
-                                        }
-
-                                        QPushButton:pressed {
-                                            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                                stop:0 #22863A,      /* Vert foncé */
-                                                stop:1 #176F2C);     /* Vert très foncé */
-                                        }
-                                    """)
-        self.buttons.ajouter_profil.clicked.connect(self.enregistrer_personne)
-
-        # Assignation des méthodes aux différents bouttons.
-        self.buttons.ajouter_enfant.clicked.connect(self.ajouter_enfant)
-        self.buttons.lister_enfant.clicked.connect(
-            lambda : self.afficher_liste(list_to_show=self.__nouvelle_liste_enfants, enfant=True))
-
-        self.buttons.ajouter_conjoint.clicked.connect(self.ajouter_conjoint)
-        self.buttons.lister_conjoint.clicked.connect(
-            lambda: self.afficher_liste(list_to_show=self.__nouvelle_liste_conjoints, conjoint=True))
-
-        self.buttons.ajouter_ascendant.clicked.connect(self.ajouter_ascendant)
-        self.buttons.lister_ascendant.clicked.connect(
-            lambda: self.afficher_liste(list_to_show=self.__nouvelle_liste_ascendants))
-
-        self.buttons.ajouter_collateral.clicked.connect(self.ajouter_collateral)
-        self.buttons.lister_collateral.clicked.connect(
-            lambda: self.afficher_liste(list_to_show=self.__nouvelle_liste_collateraux))
-
-        self.entries.profil_nom_le.textChanged.connect(self.defining_nom_profil_and_others)
-        self.entries.profil_sexe_le.currentTextChanged.connect(self.defining_sexe_conjoint)
-
-    # ===========================================================
-    def afficher_liste(self, list_to_show, enfant: bool = False, conjoint: bool = False):
-        interface = QDialog()
-        interface.setStyleSheet("""background-color: qlineargradient(
-                        x1:0, y1:0, x2:1, y2:1,
-                        stop:0 #B9D5F9,
-                        stop:0.6 #e8f2ff,
-                        stop:1 #d0e3ff
-                    );
-                    border-radius: 8px;
-                    """)
-        interface.setModal(True)
-        icon = QIcon(QPixmap("assets/078-android.png"))
-        interface.setWindowIcon(icon)
-
-        interface_layout = QVBoxLayout(interface)
-
-        list_widget = CustomAyantsDroitsList()
-        if enfant:
-            for individu in list_to_show:
-                list_widget.addItem(f"Nom : {individu.nom} \nPrénom : {individu.prenom} \nAge: {individu.age} ans \nSexe : {individu.sexe} \nPoursuit les études : {"Oui" if individu.poursuit_etudes else "Non"} \nHandicap majeur à vie : {"Oui" if individu.handicap_majeur else "Non"}")
-                print(f"Nom :{individu.nom} - Prénom :{individu.prenom}")
-        elif conjoint:
-            for individu in list_to_show:
-                list_widget.addItem(f"Nom : {individu.nom} \nPrénom : {individu.prenom} \nAge: {individu.age} ans \nSexe : {individu.sexe}")
-                print(f"Nom :{individu.nom} - Prénom :{individu.prenom}")
-        else:
-            for individu in list_to_show:
-                list_widget.addItem(f"Nom : {individu.nom} \nPrénom : {individu.prenom} \nAge: {individu.age} ans")
-                print(f"Nom :{individu.nom} - Prénom :{individu.prenom}")
-
-        interface_layout.addWidget(list_widget)
-        interface.show()
-        interface.exec()
-        pass
-
-    def ajouter_enfant(self):
-        from database_manager import Enfant
-
-        nom_enfant = self.entries.enfant_nom_le.text()
-        prenom_enfant = self.entries.enfant_prenom_le.text()
-
-        if not nom_enfant or not prenom_enfant:
-            QMessageBox.critical(None, "Erreur", f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
-            return
-
+        action_modifier = QAction("🚮Supprimer", self)
+        menu.addAction(action_modifier)
         try:
-            age_enfant = int(self.entries.enfant_age_le.text())
+            print(index.row())
+            action_modifier.triggered.connect(lambda: self.__action_supprimer_enfant(index.row()))
         except Exception as e:
-            QMessageBox.critical(None, "Erreur", f"Une valeur d'âge erronée :\n{str(e)}.\nEchec de l'enrégistrement.")
-            return
+            print(e)
 
-        sexe_enfant = self.entries.enfant_sexe_le.currentText()
-        handicap_enfant = self.entries.enfant_handicap_le.isChecked()
-        etude_enfant = self.entries.enfant_etudes_le.isChecked()
-
-         # Création du profil de l'enfant.
-        enfant = Enfant(nom=nom_enfant,
-                        prenom=prenom_enfant,
-                        age=age_enfant,
-                        sexe=sexe_enfant,
-                        poursuit_etudes=etude_enfant,
-                        handicap_majeur=handicap_enfant)
-        self.__nouvelle_liste_enfants.append(
-            enfant) if (enfant.nom, enfant.prenom) not in [(enfant.nom, enfant.prenom) for enfant in self.__nouvelle_liste_enfants] else None
+        menu.exec(self.enfants_list.mapToGlobal(position))
         pass
 
-    def ajouter_conjoint(self):
-        from database_manager import Conjoint
+    def supprimer_conjoint(self, position):
 
-        nom_conjoint = self.entries.conjoint_nom_le.text()
-        prenom_conjoint = self.entries.conjoint_prenom_le.text()
+        index = self.conjoints_list.indexAt(position)
 
-        if not nom_conjoint or not prenom_conjoint:
-            QMessageBox.critical(None, "Erreur", f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+        if not index.isValid():
             return
 
-        try:
-            age_conjoint = int(self.entries.conjoint_age_le.text())
-        except Exception as e:
-            QMessageBox.critical(None, "Erreur", f"Une valeur d'âge erronée :\n{str(e)}.\nEchec de l'enrégistrement.")
-            return
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+        /* Style léger pour le menu contextuel */
+            QMenu {
+                background-color: white;
+                border: 1px solid #d0d7de;
+                border-radius: 6px;
+                padding: 4px;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                font-size: 13px;
+            }
 
-        sexe_conjoint = self.entries.conjoint_sexe_le.currentText()
-
-        conjoint = Conjoint(nom=nom_conjoint,
-                            prenom=prenom_conjoint,
-                            age=age_conjoint,
-                            sexe=sexe_conjoint)
-
-        self.__nouvelle_liste_conjoints.append(
-            conjoint) if (conjoint.nom, conjoint.prenom) not in [(conjoint.nom, conjoint.prenom) for conjoint in self.__nouvelle_liste_conjoints] else None
-        pass
-
-    def ajouter_ascendant(self):
-        from database_manager import Ascendant
-
-        nom_ascendant = self.entries.ascendant_nom_le.text()
-        prenom_ascendant = self.entries.ascendant_prenom_le.text()
-
-        if not nom_ascendant or not prenom_ascendant:
-            QMessageBox.critical(None, "Erreur", f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
-            return
-
-        try:
-            age_ascendant = int(self.entries.ascendant_age_le.text())
-        except Exception as e:
-            QMessageBox.critical(None, "Erreur", f"Une erreur s'est produite :\n{str(e)}.\nEchec de l'enrégistrement.")
-            return
-
-        sexe_ascendant = self.entries.ascendant_sexe_le.currentText()
-
-        ascendant = Ascendant(nom=nom_ascendant,
-                            prenom=prenom_ascendant,
-                            age=age_ascendant,
-                            sexe=sexe_ascendant)
-
-        self.__nouvelle_liste_ascendants.append(
-            ascendant) if (ascendant.nom, ascendant.prenom) not in [(ascendant.nom, ascendant.prenom) for ascendant in self.__nouvelle_liste_ascendants] else None
-        pass
-
-    def ajouter_collateral(self):
-        from database_manager import Collateral
-
-        nom_collateral = self.entries.collateral_nom_le.text()
-        prenom_collateral = self.entries.collateral_prenom_le.text()
-
-        if not nom_collateral or not prenom_collateral:
-            QMessageBox.critical(None, "Erreur", f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
-            return
-
-        try:
-            age_collateral = int(self.entries.collateral_age_le.text())
-        except Exception as e:
-            QMessageBox.critical(None, "Erreur", f"Une valeur d'âge erronée :\n{str(e)}.\nEchec de l'enrégistrement.")
-            return
-
-        collateral = Collateral(nom=nom_collateral,
-                             prenom=prenom_collateral,
-                             age=age_collateral)
-
-        self.__nouvelle_liste_collateraux.append(
-            collateral) if (collateral.nom, collateral.prenom) not in [(collateral.nom, collateral.prenom) for collateral in self.__nouvelle_liste_collateraux] else None
-        pass
-
-    def enregistrer_personne(self):
-        from database_manager import Personne
-
-        nom_personne = self.entries.profil_nom_le.text()
-        prenom_personne = self.entries.profil_prenom_le.text()
-
-        if not nom_personne or not prenom_personne:
-            QMessageBox.critical(None, "Erreur", f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
-            return
-
-        try:
-            age_personne = int(self.entries.profil_age_le.text())
-        except Exception as e:
-            QMessageBox.critical(None, "Erreur", f"Une valeur d'âge erronée :\n{str(e)}.\n\nEchec de l'enrégistrement.")
-            return
-
-        profession_personne = self.entries.profil_profession_le.text()
-
-        try:
-            salaire_personne = int(self.entries.profil_salaire_le.text())
-        except Exception as e:
-            QMessageBox.critical(None, "Erreur", f"Une valeur salaire erronée :\n{str(e)}.\n\nEchec de l'enrégistrement.")
-            return
-
-        situation_matrimoniale = self.entries.profil_matrimoniale_le.currentText()
-        pays_residence = self.entries.profil_pays_residence_le.currentText()
-        pays_sinistre = self.entries.profil_pays_sinistre_le.currentText()
-        sexe_personne = self.entries.profil_sexe_le.currentText()
-
-        # Création du profil de la victime.
-        personne = Personne(nom=nom_personne,
-                            prenom=prenom_personne,
-                            age=age_personne,
-                            sexe=sexe_personne,
-                            age_limite=AGE_LIMITE,
-                            profession=profession_personne,
-                            salaire=salaire_personne,
-                            situation_matrimoniale=situation_matrimoniale,
-                            conjoints=self.__nouvelle_liste_conjoints,
-                            enfants=self.__nouvelle_liste_enfants,
-                            ascendants=self.__nouvelle_liste_ascendants,
-                            collateraux=self.__nouvelle_liste_collateraux,
-                            pays_residence=pays_residence,
-                            pays_sinistre=pays_sinistre)
-
-        # Insertion de la personne dans la base de données.
-        ajouter_personne_data_base(personne)
-
-        if data_contoller.load_profil_alive:
-            data_contoller.call_fonction(key="load_profil_alive")
-        else:
-            data_contoller.call_fonction(key="load_profil_dead")
-
-        self.close() # On ferme la fenêtre de création d'un nouveau profil.
-        pass
-
-    def defining_nom_profil_and_others(self, text):
-        self.entries.enfant_nom_le.setText(text)
-        self.entries.conjoint_nom_le.setText(text)
-        self.entries.ascendant_nom_le.setText(text)
-        self.entries.collateral_nom_le.setText(text)
-        pass
-
-    def defining_sexe_conjoint(self, sexe):
-        if sexe == "M":
-            self.entries.conjoint_sexe_le.setCurrentText("F")
-        else:
-            self.entries.conjoint_sexe_le.setCurrentText("M")
-
-    class Entries:
-        def __init__(self):
-            from algorithm.tables import list_pays_cima
-            # ===========================================================
-            self.profil_nom_le = QLineEdit()
-            self.profil_prenom_le = QLineEdit()
-            self.profil_age_le = QLineEdit()
-
-            self.profil_profession_le = QLineEdit()
-            self.profil_salaire_le = QLineEdit()
-            self.profil_matrimoniale_le = QComboBox()
-            self.profil_matrimoniale_le.addItems([SituationMatrimoniale.CELIBATAIRE,
-                                                  SituationMatrimoniale.MARIE_E,
-                                                  SituationMatrimoniale.DIVORCE,
-                                                  SituationMatrimoniale.VEUF_VE])
-            self.profil_sexe_le = QComboBox()
-            self.profil_sexe_le.addItems(["M", "F"])
-
-            self.profil_pays_residence_le = QComboBox()
-            self.profil_pays_sinistre_le = QComboBox()
-
-            for cbbx in [self.profil_pays_residence_le, self.profil_pays_sinistre_le]:
-                cbbx.addItems(list_pays_cima)
-
-            # ===========================================================
-            self.enfant_nom_le = QLineEdit()
-            self.enfant_prenom_le = QLineEdit()
-            self.enfant_age_le = QLineEdit()
-            self.enfant_sexe_le = QComboBox()
-            self.enfant_sexe_le.addItems(["M", "F"])
-            self.enfant_etudes_le = QCheckBox("L'enfant continue-t-il ses études ?")
-            self.enfant_handicap_le = QCheckBox("L'enfant justifie-t-il d'un handicap sévère ?")
-
-            # ===========================================================
-            self.conjoint_nom_le = QLineEdit()
-            self.conjoint_prenom_le = QLineEdit()
-            self.conjoint_age_le = QLineEdit()
-            self.conjoint_sexe_le = QComboBox()
-            self.conjoint_sexe_le.addItems(["M", "F"])
-
-            # ===========================================================
-            self.collateral_nom_le = QLineEdit()
-            self.collateral_prenom_le = QLineEdit()
-            self.collateral_age_le = QLineEdit()
-
-            # ===========================================================
-            self.ascendant_nom_le = QLineEdit()
-            self.ascendant_prenom_le = QLineEdit()
-            self.ascendant_age_le = QLineEdit()
-            self.ascendant_sexe_le = QComboBox()
-            self.ascendant_sexe_le.addItems(["M", "F"])
-
-    class ButtonGroup:
-        def __init__(self):
-            button_style = """
-                    QPushButton {
-                                    background: qlineargradient(
-                                        x1: 0, y1: 0,
-                                        x2: 1, y2: 1,  /* Diagonale ↘ */
-                                        stop: 0 #63c966,     /* Vert vif en haut à gauche */
-                                        stop: 0.5 #57b45b,   /* Vert moyen au centre */
-                                        stop: 1 #4fa254      /* Vert plus foncé en bas à droite */
-                                    );
-                                    border: none;
-                                    border-radius: 3px;
-                                    margin-right: 7px;
-                                    padding-bottom: 3px;
-                                    padding-left: 10px;
-                                    color: #ffffff;
-                                    font-weight: 500;
-                                    font-size: 12pt;
-                                    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
-                                }
-
-                                QPushButton:hover {
-                                    background: qlineargradient(
-                                        x1: 0, y1: 0,
-                                        x2: 1, y2: 1,
-                                        stop: 0 #55b45c,
-                                        stop: 1 #419a47
-                                    );
-                                    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.25);
-                                }
-
-                                QPushButton:pressed {
-                                    background: qlineargradient(
-                                        x1: 0, y1: 0,
-                                        x2: 1, y2: 1,
-                                        stop: 0 #3f8f3f,
-                                        stop: 1 #347a39
-                                    );
-                                    color: #d5e9d1;
-                                    box-shadow: inset 0px 1px 3px rgba(0, 0, 0, 0.3);
-                                }
-                    """
-            red_button_style = """
-            QPushButton {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #ff5252,    /* Rouge vif */
-                    stop:0.5 #ff3d3d,  /* Rouge intense */
-                    stop:1 #ff1744     /* Rouge profond */
-                );
-                border: none;
-                border-radius: 3px;
-                padding-bottom: 3px;
-                padding-left: 10px;
-                color: white;
-                font-weight: 500;
-                font-size: 12pt;
-                font-family: 'Segoe UI', sans-serif;
+            QMenu::item {
+                padding: 6px 12px;
+                border-radius: 4px;
                 margin: 2px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                color: #24292f;
             }
 
-            QPushButton:hover {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #ff6b68,
-                    stop:1 #ff2d4a
-                );
-                box-shadow: 0 2px 5px rgba(0,0,0,0.16);
-                transform: translateY(-1px);
+            QMenu::item:selected {
+                background-color: #0969da;
+                color: white;
             }
 
-            QPushButton:pressed {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #e53935,
-                    stop:1 #c62828
-                );
-                color: #ffebee;
-                box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 
-                            0 1px 1px rgba(0,0,0,0.1);
-                transform: translateY(0);
+            QMenu::item:disabled {
+                color: #8c959f;
             }
 
-            QPushButton:disabled {
-                background: #ef9a9a;
-                color: #ffebee;
-                box-shadow: none;
+            QMenu::separator {
+                height: 1px;
+                background-color: #d0d7de;
+                margin: 4px 0;
             }
-            """
+        """)
 
-            self.ajouter_profil = QPushButton("Ajouter ➕")
-            self.ajouter_profil.setStyleSheet(button_style)
+        action_modifier = QAction("🚮Supprimer", self)
+        action_modifier.triggered.connect(lambda: self.__action_supprimer_conjoint(index.row()))
+        menu.addAction(action_modifier)
 
-            self.ajouter_enfant = QPushButton("Ajouter ➕")
-            self.ajouter_enfant.setStyleSheet(button_style)
-            self.lister_enfant = QPushButton("Liste 🗒️")
-            self.lister_enfant.setStyleSheet(red_button_style)
+        menu.exec(self.conjoints_list.mapToGlobal(position))
+        pass
 
-            self.ajouter_conjoint = QPushButton("Ajouter ➕")
-            self.ajouter_conjoint.setStyleSheet(button_style)
-            self.lister_conjoint = QPushButton("Liste 🗒️")
-            self.lister_conjoint.setStyleSheet(red_button_style)
+    def supprimer_ascendant(self, position):
 
-            self.ajouter_collateral = QPushButton("Ajouter ➕")
-            self.ajouter_collateral.setStyleSheet(button_style)
-            self.lister_collateral = QPushButton("Liste 🗒️")
-            self.lister_collateral.setStyleSheet(red_button_style)
+        index = self.ascendants_list.indexAt(position)
 
-            self.ajouter_ascendant = QPushButton("Ajouter ➕")
-            self.ajouter_ascendant.setStyleSheet(button_style)
-            self.lister_ascendant = QPushButton("Liste 🗒️")
-            self.lister_ascendant.setStyleSheet(red_button_style)
+        if not index.isValid():
+            return
+
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+        /* Style léger pour le menu contextuel */
+            QMenu {
+                background-color: white;
+                border: 1px solid #d0d7de;
+                border-radius: 6px;
+                padding: 4px;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                font-size: 13px;
+            }
+
+            QMenu::item {
+                padding: 6px 12px;
+                border-radius: 4px;
+                margin: 2px;
+                color: #24292f;
+            }
+
+            QMenu::item:selected {
+                background-color: #0969da;
+                color: white;
+            }
+
+            QMenu::item:disabled {
+                color: #8c959f;
+            }
+
+            QMenu::separator {
+                height: 1px;
+                background-color: #d0d7de;
+                margin: 4px 0;
+            }
+        """)
+
+        action_modifier = QAction("🚮Supprimer", self)
+        action_modifier.triggered.connect(lambda: self.__action_supprimer_ascendant(index.row()))
+        menu.addAction(action_modifier)
+
+        menu.exec(self.ascendants_list.mapToGlobal(position))
+        pass
+
+    def supprimer_collateral(self, position):
+
+        index = self.collateraux_list.indexAt(position)
+
+        if not index.isValid():
+            return
+
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+        /* Style léger pour le menu contextuel */
+            QMenu {
+                background-color: white;
+                border: 1px solid #d0d7de;
+                border-radius: 6px;
+                padding: 4px;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                font-size: 13px;
+            }
+
+            QMenu::item {
+                padding: 6px 12px;
+                border-radius: 4px;
+                margin: 2px;
+                color: #24292f;
+            }
+
+            QMenu::item:selected {
+                background-color: #0969da;
+                color: white;
+            }
+
+            QMenu::item:disabled {
+                color: #8c959f;
+            }
+
+            QMenu::separator {
+                height: 1px;
+                background-color: #d0d7de;
+                margin: 4px 0;
+            }
+        """)
+
+        action_modifier = QAction("🚮Supprimer", self)
+        action_modifier.triggered.connect(lambda: self.__action_supprimer_collateral(index.row()))
+        menu.addAction(action_modifier)
+
+        menu.exec(self.collateraux_list.mapToGlobal(position))
+        pass
+
+    def __action_supprimer_enfant(self, index):
+        self.personne.enfants.pop(index)
+
+        self.enfants_list.clear()
+        for individu in self.personne.enfants:
+            self.enfants_list.addItem(
+                f"Nom : {individu.nom} \nPrénom : {individu.prenom} \nAge: {individu.age} ans \nSexe : {individu.sexe} \nPoursuit les études : {"Oui" if individu.poursuit_etudes else "Non"} \nHandicap majeur à vie : {"Oui" if individu.handicap_majeur else "Non"}")
+        pass
+
+    def __action_supprimer_conjoint(self, index):
+        self.personne.conjoints.pop(index)
+
+        self.conjoints_list.clear()
+        for conjoint in self.personne.conjoints:
+            self.conjoints_list.addItem(
+                f"Nom : {conjoint.nom}\nPrénom : {conjoint.prenom}\nAge : {conjoint.age} ans\nSexe: {conjoint.sexe}")
+        pass
+
+    def __action_supprimer_collateral(self, index):
+        self.personne.collateraux.pop(index)
+
+        self.collateraux_list.clear()
+        for collateral in self.personne.collateraux:
+            self.collateraux_list.addItem(
+                f"Nom : {collateral.nom}\nAge : {collateral.prenom}\nSexe : {collateral.age} ans")
+        pass
+
+    def __action_supprimer_ascendant(self, index):
+        self.personne.ascendants.pop(index)
+
+        self.ascendants_list.clear()
+        for ascendant in self.personne.ascendants:
+            self.ascendants_list.addItem(
+                f"Nom : {ascendant.nom}\nPrénom : {ascendant.prenom}\n Age : {ascendant.age} ans\nSexe: {ascendant.sexe}")
+        pass
+
+    def ajouter_individu(self, type_: str):
+        match type_:
+            case "Ascendant":
+
+                nom = self.nouveau_nom.text()
+                prenom = self.nouveau_prenom.text()
+                age = self.nouvel_age.text()
+                sexe = self.nouveau_sexe.currentText()
+
+                if not nom or not prenom:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+                    return
+
+                try:
+                    int(age)
+                except:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
+                    return
+
+                try:
+                    int(age) > 100
+                except:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
+                    return
+
+                if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.ascendants]:
+                    return
+
+                ascendant = Ascendant(nom=nom,
+                                      prenom=prenom,
+                                      age=age,
+                                      sexe=sexe)
+
+                self.personne.ascendants.append(ascendant)
+
+                # Réinitialisation de l'affichage.
+                self.ascendants_list.clear()
+                for ascendant in self.personne.ascendants:
+                    self.ascendants_list.addItem(
+                        f"Nom : {ascendant.nom}\nPrénom : {ascendant.prenom}\n Age : {ascendant.age} ans\nSexe: {ascendant.sexe}")
+            case "Conjoint":
+
+                nom = self.nouveau_nom.text()
+                prenom = self.nouveau_prenom.text()
+                age = self.nouvel_age.text()
+                sexe = self.nouveau_sexe.currentText()
+
+                if not nom or not prenom:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+                    return
+
+                try:
+                    int(age)
+                except:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
+                    return
+
+                try:
+                    int(age) > 100
+                except:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
+                    return
+
+                if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.conjoints]:
+                    return
+
+                conjoint = Conjoint(nom=nom,
+                                    prenom=prenom,
+                                    age=age,
+                                    sexe=sexe)
+                self.personne.conjoints.append(conjoint)
+
+                # Réinitialisation de l'affichage.
+                self.conjoints_list.clear()
+                for conjoint in self.personne.conjoints:
+                    self.conjoints_list.addItem(
+                        f"Nom : {conjoint.nom}\nPrénom : {conjoint.prenom}\nAge : {conjoint.age} ans\nSexe: {conjoint.sexe}")
+            case "Collatéral":
+
+                nom = self.nouveau_nom.text()
+                prenom = self.nouveau_prenom.text()
+                age = self.nouvel_age.text()
+
+                if not nom or not prenom:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+                    return
+
+                try:
+                    int(age)
+                except:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
+                    return
+
+                try:
+                    int(age) > 100
+                except:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
+                    return
+
+                if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.collateraux]:
+                    return
+
+                collateral = Collateral(nom=nom,
+                                        prenom=prenom,
+                                        age=age)
+                self.personne.collateraux.append(collateral)
+
+                # Réinitialisation de l'affichage.
+                self.collateraux_list.clear()
+                for collateral in self.personne.collateraux:
+                    self.collateraux_list.addItem(
+                        f"Nom : {collateral.nom}\nAge : {collateral.prenom}\nSexe : {collateral.age} ans")
+                print()
+            case "Enfant":
+
+                nom = self.nouveau_nom.text()
+                prenom = self.nouveau_prenom.text()
+                age = self.nouvel_age.text()
+                sexe = self.nouveau_sexe.currentText()
+                etudes = self.nouveau_etudes.isChecked()
+                handicap_majeur = self.nouveau_handicap_majeur.isChecked()
+                orpehlin_double = self.nouveau_orphelin_double.isChecked()
+
+                if not nom or not prenom:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+                    return
+
+                try:
+                    int(age)
+                except:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
+                    return
+
+                try:
+                    int(age) > 100
+                except:
+                    QMessageBox.critical(None, "Erreur",
+                                         f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
+                    return
+
+                if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.enfants]:
+                    return
+
+                enfant = Enfant(nom=nom,
+                                prenom=prenom,
+                                age=age,
+                                sexe=sexe,
+                                poursuit_etudes=etudes,
+                                handicap_majeur=handicap_majeur,
+                                orphelin_double=orpehlin_double)
+
+                self.personne.enfants.append(enfant)
+
+                self.enfants_list.clear()
+                for individu in self.personne.enfants:
+                    self.enfants_list.addItem(
+                        f"Nom : {individu.nom} \nPrénom : {individu.prenom} \nAge: {individu.age} ans \nSexe : {individu.sexe} \nPoursuit les études : {"Oui" if individu.poursuit_etudes else "Non"} \nHandicap majeur à vie : {"Oui" if individu.handicap_majeur else "Non"}")
+
+        pass
+
+    def valider_enregistrement(self):
+        nom = self.profil_nom_le.text()
+        prenom = self.profil_prenom_le.text()
+        age = self.profil_age_le.text()
+        profession = self.profil_profession_le.text()
+        salaire = self.profil_salaire_le.text()
+        situation_matrimoniale = self.profil_matrimoniale_cb.currentText()
+        sexe = self.profil_sexe_cb.currentText()
+        pays_r = self.profil_pays_residence_cb.currentText()
+        pays_s = self.profil_pays_sinistre_cb.currentText()
+
+        if not nom or not prenom:
+            QMessageBox.critical(None, "Erreur",
+                                 f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+            return
+
+        try:
+            int(age)
+        except:
+            QMessageBox.critical(None, "Erreur",
+                                 f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
+            return
+
+        try:
+            int(age) > 100
+        except:
+            QMessageBox.critical(None, "Erreur",
+                                 f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
+            return
+
+        try:
+            float(salaire)
+        except:
+            QMessageBox.critical(None, "Erreur",
+                                 f"Le salaire doit être une valeur numérique sans espaces.\nEchec de l'enrégistrement.")
+            return
+
+        personne = Personne(
+            nom=nom,
+            prenom=prenom,
+            age=int(age),
+            profession=profession,
+            salaire=float(salaire),
+            situation_matrimoniale=situation_matrimoniale,
+            pays_residence=pays_r,
+            pays_sinistre=pays_s,
+            sexe=sexe,
+            age_limite=AGE_LIMITE,
+            enfants=self.personne.enfants,
+            conjoints=self.personne.conjoints,
+            ascendants=self.personne.ascendants,
+            collateraux=self.personne.collateraux
+        )
+
+        if self.modification:
+            try:
+                supprimer_et_reorganiser_ids(self.personne_index)
+            except Exception as e:
+                print(e)
+                return
+
+        try:
+            ajouter_personne_data_base(personne)
+        except Exception as e:
+            print(e)
+            return
+
+        QMessageBox.information(None, "Enregistrement", "Enregistrement effectué avec succès")
         pass
 
     pass
@@ -1118,10 +1343,19 @@ class ListProfilsAlive(QDialog):
             }
         """)
 
+        personne = rechercher_personne_par_id(index.row()+1)
+
         action_modifier = QAction("✏️ Modifier", self)
+        action_modifier.triggered.connect(lambda : self.__modifier_profil(personne_=personne, index_=index.row()+1))
         menu.addAction(action_modifier)
 
         menu.exec(self.__list_vitimes.mapToGlobal(position))
+
+    def __modifier_profil(self, personne_, index_):
+        print("Modification du profil de la victime !")
+        nouveau_profil = NouveauProfil(personne=personne_, personne_indexe=index_)
+        nouveau_profil.show()
+        nouveau_profil.exec()
         pass
 
 
@@ -1431,10 +1665,19 @@ class ListProfilsDead(QDialog):
             }
         """)
 
+        personne = rechercher_personne_par_id(index.row() + 1)
+
         action_modifier = QAction("✏️ Modifier", self)
+        action_modifier.triggered.connect(lambda: self.__modifier_profil(personne_=personne, index_=index.row() + 1))
         menu.addAction(action_modifier)
 
         menu.exec(self.__list_vitimes.mapToGlobal(position))
+
+    def __modifier_profil(self, personne_, index_):
+        print("Modification du profil de la victime !")
+        nouveau_profil = NouveauProfil(personne=personne_, personne_indexe=index_)
+        nouveau_profil.show()
+        nouveau_profil.exec()
         pass
 
 
