@@ -198,7 +198,24 @@ class DeadRepartition:
 class DataController:
     def __init__(self):
         self.__func_dict = {} # Il contiendra les noms des fonctions et leurs clés pour les appels futurs.
-        self.__data_dict = {} # Il contiendra les données au cours de l'exécution du programme.
+        self.__data_dict = {"frais_cumul": 0.0,
+                            "indemnite_it": 0.0,
+                            "indemnite_ip": 0.0,
+                            "assistance_tp": 0.0,
+                            "pretium_doloris": 0.0,
+                            "prejudice_esthetique": 0.0,
+                            "perte_gain_pro": 0.0,
+                            "prejudice_scolaire": 0.0,
+                            "prejudice_moral_conjoint": 0.0,
+                            "prejudice_physiologique" : 0.0,
+                            "pe_enfants": 0.0,
+                            "pe_conjoints": 0.0,
+                            "pe_ascendants": 0.0,
+                            "pm_enfants": 0.0,
+                            "pm_conjoints": 0.0,
+                            "pm_ascendants": 0.0,
+                            "pm_collateraux": 0.0,
+                            } # Il contiendra les données au cours de l'exécution du programme.
         self.load_profil_alive: bool = True
         pass
 
