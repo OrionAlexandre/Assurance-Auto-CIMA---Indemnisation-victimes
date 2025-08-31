@@ -2212,13 +2212,18 @@ class FraisWidget(CustomCalculusQWidget):
         self.cumul_line_edit.setPlaceholderText("000 000 000 F CFA")
         self.add_content(self.cumul_line_edit)
 
+        self.add_content(QLabel("Cumul honnaires d'expert\n(sans les espaces) :"))
+        self.honoraires_line_edit = QLineEdit()
+        self.honoraires_line_edit.setPlaceholderText("000 000 000 F CFA")
+        self.add_content(self.honoraires_line_edit)
+
         self.__red_label = QLabel("Entrée invalide. Veuillez entrer une valeur numérique !")
         self.__red_label.setStyleSheet("font-size: 15; font-weight: bold; color: #D20F45;")
         self.__red_label.hide()
         self.add_content(self.__red_label)
 
         # Contenu vide pour ajuster la disposition de tous les widgets.
-        for i in range(7):
+        for i in range(3):
             self.add_content(QLabel())
 
         # Barre de séparation.
@@ -2237,18 +2242,20 @@ class FraisWidget(CustomCalculusQWidget):
         self.add_content(self.lbl_result)
 
         self.cumul_line_edit.editingFinished.connect(self.focus_out_or_entry)
+        self.honoraires_line_edit.editingFinished.connect(self.focus_out_or_entry)
 
     def focus_out_or_entry(self):
-        valeur = self.cumul_line_edit.text()
+        valeur_cumul = self.cumul_line_edit.text()
+        valeur_honoraire = self.honoraires_line_edit.text()
         frais_de_traitment = FraisDeTraitement()
 
-        if not valeur:
+        if not valeur_cumul or not valeur_honoraire:
             pass
 
         try:
-            valeur_int = int(valeur)
+            valeur = float(valeur_cumul) + float(valeur_honoraire)
             self.__red_label.hide()
-            frais_de_traitment.valeur = valeur_int
+            frais_de_traitment.valeur = valeur
             indemnite = frais_de_traitment.valeur
             self.lbl_result.setText(f"{format_nombre_fr(indemnite)} F CFA")
         except:
@@ -3244,7 +3251,7 @@ class RepartitionAyantsDroitWidget(ScrollableWidget):
 
         self.setFixedHeight(300)
         # self.container.setMinimumWidth(total_width)
-        self.container.setFixedWidth(2200)
+        self.container.setFixedWidth(2940) # 2200 valeur limite.
 
         widgets = [
             RepartitionEnfants(),
@@ -3328,41 +3335,33 @@ class VictimeDecedee(QWidget):
         # Ajout d'un layout pour les profils des ayants droit de la victime.
         label_ayants_droit = QLabel("La victime décédée")
         label_ayants_droit.setStyleSheet("""
-                            QLabel {
-                                color: #34495e;
-                                font-size: 16px;
-                                font-weight: bold;
-                                padding-bottom: 8px;
-                                border-bottom: 2px solid #3498db;  /* Ligne de séparation bleue */
-                                margin-bottom: 7px;
-                            }
-                        """)
+                                    QLabel {
+                                        color: #34495e;
+                                        font-size: 16px;
+                                        font-weight: bold;
+                                        padding-bottom: 8px;
+                                        border-bottom: 2px solid #3498db;  /* Ligne de séparation bleue */
+                                        margin-bottom: 7px;
+                                    }
+                                """)
         label_ayants_droit.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.container_layout.addWidget(label_ayants_droit)
 
         self.container_layout.addWidget(self.profil_widget, stretch=0)
 
-        """
-        # Barre de séparation.
-        self.__separator = QWidget()
-        self.__separator.setFixedHeight(7)
-        # self.__separator.setFixedWidth(1)
-        self.__separator.setStyleSheet("background-color: #060270")
-        self.container_layout.addWidget(self.__separator)
-        """
 
         # Ajout d'un layout pour les profils des ayants droit de la victime.
         label_ayants_droit = QLabel("Les ayants droits")
         label_ayants_droit.setStyleSheet("""
-                            QLabel {
-                                color: #34495e;
-                                font-size: 16px;
-                                font-weight: bold;
-                                padding-bottom: 8px;
-                                border-bottom: 2px solid #3498db;  /* Ligne de séparation bleue */
-                                margin-bottom: 7px;
-                            }
-                        """)
+                                    QLabel {
+                                        color: #34495e;
+                                        font-size: 16px;
+                                        font-weight: bold;
+                                        padding-bottom: 8px;
+                                        border-bottom: 2px solid #3498db;  /* Ligne de séparation bleue */
+                                        margin-bottom: 7px;
+                                    }
+                                """)
         label_ayants_droit.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.container_layout.addWidget(label_ayants_droit)
 

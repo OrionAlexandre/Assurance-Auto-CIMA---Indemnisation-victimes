@@ -80,6 +80,7 @@ class MenuButton(QPushButton):
                     color: #6F809C;
                     padding: 6px 14px;
                     text-align: left;
+                    font-size: 12px;
                 }
                 QPushButton::icon {
                     padding-right: 8px;
@@ -493,7 +494,7 @@ class RepartitionWidget(QWidget):
                                     } 
                                 """)
 
-        self.setFixedHeight(30 * height + 100)
+        self.setMaximumHeight(30 * height + 150)
 
         self.prejudice_economique = prejudice_economique
         self.list_ayant_droit = list_ayants_droit
@@ -502,7 +503,7 @@ class RepartitionWidget(QWidget):
         self.main_layout = QGridLayout(self)
 
         label_intitule = QLabel(intitule)
-        label_intitule.setStyleSheet("font-weight: bold; margin-bottom: 7px;")
+        label_intitule.setStyleSheet("font-weight: bold; margin-bottom: 3px;")
         label_intitule.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.main_layout.addWidget(label_intitule, 0, 0, 1, 4) if prejudice_economique else self.main_layout.addWidget(label_intitule, 0, 0, 1, 3)
 
@@ -543,6 +544,27 @@ class RepartitionWidget(QWidget):
                 self.main_layout.addWidget(QLabel("-"), row, 3)
                 row += 1
 
+            # Barre de séparation.
+            self.__separator = QWidget()
+            self.__separator.setFixedHeight(1)
+            # self.__separator.setFixedWidth(1)
+            self.__separator.setStyleSheet("background-color: #060270")
+            self.main_layout.addWidget(self.__separator, row, col, 1, 4)
+
+            row += 1
+            label_total = QLabel("Total :")
+            label_sum_prejudice_eco = QLabel(f"{0.00} F CFA")
+            label_sum_prejudice_moral = QLabel(f"{0.00} F CFA")
+
+            label_total.setStyleSheet("font-weight: bold; margin-bottom: 3px;")
+            label_sum_prejudice_eco.setStyleSheet("font-weight: bold; margin-bottom: 3px; color: green;")
+            label_sum_prejudice_moral.setStyleSheet("font-weight: bold; margin-bottom: 3px; color: green;")
+
+            self.main_layout.addWidget(label_total, row, 0, 1, 2)
+            self.main_layout.addWidget(label_sum_prejudice_eco, row, 2)
+            self.main_layout.addWidget(label_sum_prejudice_moral, row, 3)
+
+            row += 1
             # Barre de séparation (La dernière barre).
             self.__separator = QWidget()
             self.__separator.setFixedHeight(1)
@@ -551,43 +573,25 @@ class RepartitionWidget(QWidget):
             self.main_layout.addWidget(self.__separator, row, col, 1, 4)
             return
 
-        if self.prejudice_economique:
-            for individu in list_ayants_droit:
-                # Barre de séparation.
-                self.__separator = QWidget()
-                self.__separator.setFixedHeight(1)
-                self.__separator.setStyleSheet("background-color: #060270")
-                self.main_layout.addWidget(self.__separator, row, col, 1, 4)
-                row += 1
+        for individu in list_ayants_droit:
+            # Barre de séparation.
+            self.__separator = QWidget()
+            self.__separator.setFixedHeight(1)
+            self.__separator.setStyleSheet("background-color: #060270")
+            self.main_layout.addWidget(self.__separator, row, col, 1, 4)
+            row += 1
 
-                self.main_layout.addWidget(QLabel(f"{individu.nom}"), row, col)
-                col += 1
-                self.main_layout.addWidget(QLabel(f"{individu.prenom}"), row, col)
-                col += 1
-                self.main_layout.addWidget(QLabel(f"{self.format_nombre_fr(individu.prejudice_economique)} F CFA"), row, col)
-                col += 1
-                self.main_layout.addWidget(QLabel(f"{self.format_nombre_fr(individu.prejudice_moral)} F CFA"), row, col)
+            self.main_layout.addWidget(QLabel(f"{individu.nom}"), row, col)
+            col += 1
+            self.main_layout.addWidget(QLabel(f"{individu.prenom}"), row, col)
+            col += 1
+            self.main_layout.addWidget(QLabel(f"{self.format_nombre_fr(individu.prejudice_economique)} F CFA"), row, col)
+            col += 1
+            self.main_layout.addWidget(QLabel(f"{self.format_nombre_fr(individu.prejudice_moral)} F CFA"), row, col)
 
-                row += 1
-                col = 0
-        else:
-            for individu in list_ayants_droit:
-                # Barre de séparation.
-                self.__separator = QWidget()
-                self.__separator.setFixedHeight(1)
-                # self.__separator.setFixedWidth(1)
-                self.__separator.setStyleSheet("background-color: #060270")
-                self.main_layout.addWidget(self.__separator, row, col, 1, 3)
-                row += 1
+            row += 1
+            col = 0
 
-                self.main_layout.addWidget(QLabel(f"{individu.nom}"), row, col)
-                col += 1
-                self.main_layout.addWidget(QLabel(f"{individu.prenom}"), row, col)
-                col += 1
-                self.main_layout.addWidget(QLabel(f"{self.format_nombre_fr(individu.prejudice_moral)} F CFA"), row, col)
-
-                row += 1
-                col = 0
 
         if len(list_ayants_droit) < self.height:
             for _ in range(self.height - len(list_ayants_droit)):
@@ -605,6 +609,30 @@ class RepartitionWidget(QWidget):
                 self.main_layout.addWidget(QLabel("-"), row, 3)
                 row += 1
 
+        # Barre de séparation.
+        self.__separator = QWidget()
+        self.__separator.setFixedHeight(1)
+        # self.__separator.setFixedWidth(1)
+        self.__separator.setStyleSheet("background-color: #060270")
+        self.main_layout.addWidget(self.__separator, row, col, 1, 4)
+
+        sum_preju_eco = sum([individu.prejudice_economique for individu in list_ayants_droit])
+        sum_preju_moral = sum([individu.prejudice_moral for individu in list_ayants_droit])
+
+        row += 1
+        label_total = QLabel("Total :")
+        label_sum_prejudice_eco = QLabel(f"{self.format_nombre_fr(sum_preju_eco)} F CFA")
+        label_sum_prejudice_moral = QLabel(f"{self.format_nombre_fr(sum_preju_moral)} F CFA")
+
+        label_total.setStyleSheet("font-weight: bold; margin-bottom: 3px;")
+        label_sum_prejudice_eco.setStyleSheet("font-weight: bold; margin-bottom: 3px; color: green;")
+        label_sum_prejudice_moral.setStyleSheet("font-weight: bold; margin-bottom: 3px; color: green;")
+
+        self.main_layout.addWidget(label_total, row, 0, 1, 2)
+        self.main_layout.addWidget(label_sum_prejudice_eco, row, 2)
+        self.main_layout.addWidget(label_sum_prejudice_moral, row, 3)
+
+        row += 1
         # Barre de séparation (La dernière barre).
         self.__separator = QWidget()
         self.__separator.setFixedHeight(1)

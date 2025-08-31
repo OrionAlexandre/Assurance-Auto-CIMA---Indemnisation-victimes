@@ -18,7 +18,7 @@ class MenuBar(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setFixedSize(269, 730)
+        self.setFixedSize(269, 750)
         self.setStyleSheet("""background-color: qlineargradient(
                 x1:0, y1:0, x2:1, y2:1,
                 stop:0 #B9D5F9,
@@ -86,7 +86,7 @@ class StackPages(QStackedWidget):
     def __init__(self):
         super().__init__()
 
-        self.setFixedSize(1201, 730)
+        self.setFixedSize(1201, 750)
 
         # Instanciation et ajout des différentes pages.
         self.victime_blesse = VictimeBlessee()
@@ -119,7 +119,7 @@ class MainWindow(QWidget):
         self.setWindowIcon(icon)
 
         self._main_container = QHBoxLayout(self)
-        self.setFixedSize(1500, 820)
+        self.setFixedSize(1500, 770)
 
         self.setStyleSheet("""
                 background-color: qlineargradient( \
