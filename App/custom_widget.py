@@ -785,7 +785,7 @@ class ListVictime(CustomAyantsDroitsList):
         self.liste_personnes = personnes()
 
         for personne in self.liste_personnes:
-            self.addItem(f"{personne.id} - {personne.nom} - {personne.prenom} - {personne.sexe}")
+            self.addItem(f"{personne.id} - {personne.nom} - {personne.prenom} - Sexe : {personne.sexe}")
 
         self.personne = rechercher_personne_par_id(1)  # Par défaut la première personne.
 
@@ -796,7 +796,10 @@ class ListEnfants(CustomAyantsDroitsList):
     def __init__(self, personne: Personne):
         self.personne = personne
         super().__init__()
-        self.loader = LoadList(list_view_widget=self, list_to_load=self.personne.enfants)
+
+        if self.personne is not None:
+            self.loader = LoadList(list_view_widget=self, list_to_load=self.personne.enfants)
+            return
     pass
 
 
@@ -804,7 +807,11 @@ class ListConjoints(CustomAyantsDroitsList):
     def __init__(self, personne: Personne):
         self.personne = personne
         super().__init__()
-        self.loader = LoadList(list_view_widget=self, list_to_load=self.personne.conjoints)
+
+        if self.personne is not None:
+            self.loader = LoadList(list_view_widget=self, list_to_load=self.personne.conjoints)
+            return
+
     pass
 
 
@@ -812,7 +819,11 @@ class ListCollateraux(CustomAyantsDroitsList):
     def __init__(self, personne: Personne):
         self.personne = personne
         super().__init__()
-        self.loader = LoadList(list_view_widget=self, list_to_load=self.personne.collateraux)
+
+        if self.personne is not None:
+            self.loader = LoadList(list_view_widget=self, list_to_load=self.personne.collateraux)
+            return
+
     pass
 
 
@@ -820,7 +831,11 @@ class ListAscendants(CustomAyantsDroitsList):
     def __init__(self, personne: Personne):
         self.personne = personne
         super().__init__()
-        self.loader = LoadList(list_view_widget=self, list_to_load=self.personne.ascendants)
+
+        if self.personne is not None:
+            self.loader = LoadList(list_view_widget=self, list_to_load=self.personne.ascendants)
+            return
+
     pass
 
 

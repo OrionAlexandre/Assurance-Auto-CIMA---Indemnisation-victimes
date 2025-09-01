@@ -1,11 +1,11 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, ForeignKey
-from sqlalchemy.orm import relationship, sessionmaker, declarative_base, joinedload
+from sqlalchemy.orm import relationship, sessionmaker, declarative_base, joinedload, make_transient
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy import text
 
 from PyQt6.QtCore import QObject, pyqtSignal
 from typing import List, Union, Type
 
-from api import default_personne
 #=======================================================================================================================
 Base = declarative_base()
 
@@ -197,59 +197,325 @@ def rechercher_ayants_droits_par_id(
     finally:
         session.close()
 
+from sqlalchemy.orm import joinedload
 
-def supprimer_et_reorganiser_ids(personne_id) -> bool:
+
+def supprimer_personne(personne_id: int) -> bool:
     session = Session()
     try:
-        # 1. Vérifier si la personne existe
-        personne = session.query(Personne).filter(Personne.id == personne_id).first()
+        # Charger la personne avec tous ses ayants droit
+        personne = session.query(Personne).options(
+            joinedload(Personne.enfants),
+            joinedload(Personne.conjoints),
+            joinedload(Personne.ascendants),
+            joinedload(Personne.collateraux)
+        ).filter(Personne.id == personne_id).first()
+
         if not personne:
-            print(f"Personne avec ID {personne_id} non trouvée")
+            print("❌ Personne introuvable")
             return False
 
-        # 2. Supprimer la personne (cascade supprimera automatiquement les ayants droit)
         session.delete(personne)
-        session.flush()  # Applique la suppression sans commit
-
-        # 3. Réorganiser toutes les tables
-        tables = [Personne, Enfant, Conjoint, Ascendant, Collateral]
-
-        for table in tables:
-            # Récupérer tous les enregistrements triés par ID
-            records = session.query(table).order_by(table.id).all()
-
-            # Réassigner les IDs séquentiellement
-            nouvel_id = 1
-            for record in records:
-                if record.id != nouvel_id:
-                    # Sauvegarder l'ancien ID
-                    ancien_id = record.id
-
-                    # Mettre à jour l'ID
-                    record.id = nouvel_id
-
-                    # Si c'est une table d'ayants droit, mettre à jour la référence personne_id
-                    if hasattr(record, 'personne_id') and record.personne_id:
-                        # Trouver le nouvel ID de la personne référencée
-                        personne_ref = session.query(Personne).filter(Personne.id == record.personne_id).first()
-                        if personne_ref:
-                            record.personne_id = personne_ref.id
-
-                nouvel_id += 1
-
-        # 4. Valider tous les changements
         session.commit()
-        print(f"Personne {personne_id} supprimée et IDs réorganisés avec succès")
+        print(f"✅ Personne {personne_id} et ses ayants droit supprimés")
         return True
 
     except Exception as e:
         session.rollback()
-        print(f"Erreur lors de la suppression et réorganisation: {e}")
+        print(f"❌ Erreur: {e}")
+        return False
+    finally:
+        session.close()
+
+
+def supprimer_ayants_droits(personne_id: int) -> bool:
+    """
+    Supprime tous les ayants droits (enfants, conjoints, ascendants, collatéraux)
+    d'une personne sans supprimer la personne elle-même.
+
+    Args:
+        personne_id: ID de la personne dont on veut supprimer les ayants droits
+
+    Returns:
+        bool: True si succès, False si échec
+    """
+    session = Session()
+    try:
+        # Vérifier que la personne existe
+        personne = session.query(Personne).filter(Personne.id == personne_id).first()
+        if not personne:
+            print(f"❌ Personne avec ID {personne_id} non trouvée")
+            return False
+
+        # Compter le nombre d'ayants droit avant suppression
+        compteur_avant = {
+            'enfants': session.query(Enfant).filter(Enfant.personne_id == personne_id).count(),
+            'conjoints': session.query(Conjoint).filter(Conjoint.personne_id == personne_id).count(),
+            'ascendants': session.query(Ascendant).filter(Ascendant.personne_id == personne_id).count(),
+            'collateraux': session.query(Collateral).filter(Collateral.personne_id == personne_id).count()
+        }
+
+        print(f"Suppression des ayants droits pour la personne ID {personne_id}...")
+        print(f"Avant suppression - Enfants: {compteur_avant['enfants']}, "
+              f"Conjoints: {compteur_avant['conjoints']}, "
+              f"Ascendants: {compteur_avant['ascendants']}, "
+              f"Collatéraux: {compteur_avant['collateraux']}")
+
+        # Supprimer tous les ayants droit
+        tables_ayants = [Enfant, Conjoint, Ascendant, Collateral]
+        resultats = {}
+
+        for table in tables_ayants:
+            resultat = session.query(table).filter(table.personne_id == personne_id).delete()
+            resultats[table.__tablename__] = resultat
+            print(f"  ✅ {table.__tablename__}: {resultat} élément(s) supprimé(s)")
+
+        session.commit()
+
+        # Vérification après suppression
+        compteur_apres = {
+            'enfants': session.query(Enfant).filter(Enfant.personne_id == personne_id).count(),
+            'conjoints': session.query(Conjoint).filter(Conjoint.personne_id == personne_id).count(),
+            'ascendants': session.query(Ascendant).filter(Ascendant.personne_id == personne_id).count(),
+            'collateraux': session.query(Collateral).filter(Collateral.personne_id == personne_id).count()
+        }
+
+        print(f"Après suppression - Enfants: {compteur_apres['enfants']}, "
+              f"Conjoints: {compteur_apres['conjoints']}, "
+              f"Ascendants: {compteur_apres['ascendants']}, "
+              f"Collatéraux: {compteur_apres['collateraux']}")
+
+        print(f"✅ Tous les ayants droits de la personne ID {personne_id} ont été supprimés")
+        return True
+
+    except Exception as e:
+        session.rollback()
+        print(f"❌ Erreur lors de la suppression des ayants droits: {e}")
         import traceback
         traceback.print_exc()
         return False
     finally:
         session.close()
+
+
+def reorganiser_base_completement() -> bool:
+    """
+    Sauvegarde toutes les personnes avec leurs ayants droits, vide la base,
+    puis réinsère tout avec des IDs séquentiels tout en préservant les relations.
+    """
+    session = Session()
+    try:
+        print("🔃 Début de la réorganisation complète de la base...")
+
+        # 1. Sauvegarder TOUTES les données avec leurs relations
+        print("💾 Sauvegarde de toutes les données...")
+        personnes_completes = session.query(Personne).options(
+            joinedload(Personne.enfants),
+            joinedload(Personne.conjoints),
+            joinedload(Personne.ascendants),
+            joinedload(Personne.collateraux)
+        ).order_by(Personne.id).all()
+
+        # Créer une structure de sauvegarde
+        sauvegarde = []
+        for personne in personnes_completes:
+            personne_data = {
+                'ancien_id': personne.id,
+                'nom': personne.nom,
+                'prenom': personne.prenom,
+                'age': personne.age,
+                'sexe': personne.sexe,
+                'profession': personne.profession,
+                'salaire': personne.salaire,
+                'age_limite': personne.age_limite,
+                'situation_matrimoniale': personne.situation_matrimoniale,
+                'pays_residence': personne.pays_residence,
+                'pays_sinistre': personne.pays_sinistre,
+                'enfants': [],
+                'conjoints': [],
+                'ascendants': [],
+                'collateraux': []
+            }
+
+            # Sauvegarder les enfants
+            for enfant in personne.enfants:
+                personne_data['enfants'].append({
+                    'nom': enfant.nom,
+                    'prenom': enfant.prenom,
+                    'age': enfant.age,
+                    'sexe': enfant.sexe,
+                    'handicap_majeur': enfant.handicap_majeur,
+                    'orphelin_double': enfant.orphelin_double,
+                    'poursuit_etudes': enfant.poursuit_etudes,
+                    'prejudice_economique': enfant.prejudice_economique,
+                    'prejudice_moral': enfant.prejudice_moral,
+                    'proportion': enfant.proportion
+                })
+
+            # Sauvegarder les conjoints
+            for conjoint in personne.conjoints:
+                personne_data['conjoints'].append({
+                    'nom': conjoint.nom,
+                    'prenom': conjoint.prenom,
+                    'age': conjoint.age,
+                    'sexe': conjoint.sexe,
+                    'prejudice_economique': conjoint.prejudice_economique,
+                    'prejudice_moral': conjoint.prejudice_moral,
+                    'proportion': conjoint.proportion
+                })
+
+            # Sauvegarder les ascendants
+            for ascendant in personne.ascendants:
+                personne_data['ascendants'].append({
+                    'nom': ascendant.nom,
+                    'prenom': ascendant.prenom,
+                    'age': ascendant.age,
+                    'sexe': ascendant.sexe,
+                    'prejudice_economique': ascendant.prejudice_economique,
+                    'prejudice_moral': ascendant.prejudice_moral,
+                    'proportion': ascendant.proportion
+                })
+
+            # Sauvegarder les collatéraux
+            for collateral in personne.collateraux:
+                personne_data['collateraux'].append({
+                    'nom': collateral.nom,
+                    'prenom': collateral.prenom,
+                    'age': collateral.age,
+                    'prejudice_economique': collateral.prejudice_economique,
+                    'prejudice_moral': collateral.prejudice_moral,
+                    'proportion': collateral.proportion
+                })
+
+            sauvegarde.append(personne_data)
+
+        print(f"✅ {len(sauvegarde)} personnes sauvegardées avec leurs ayants droits")
+
+        # 2. VIDER COMPLÈTEMENT la base de données
+        print("🗑️  Vidage de la base de données...")
+
+        # Désactiver les contraintes foreign key
+        session.execute(text("PRAGMA foreign_keys=OFF"))
+
+        # Vider dans l'ordre inverse des relations (d'abord les ayants droit)
+        tables = [Enfant, Conjoint, Ascendant, Collateral, Personne]
+        for table in tables:
+            deleted_count = session.query(table).delete()
+            print(f"  ✅ {table.__tablename__}: {deleted_count} élément(s) supprimé(s)")
+
+        session.commit()
+
+        # 3. RÉINSÉRER toutes les données avec de nouveaux IDs séquentiels
+        print("🔄 Réinsertion avec nouveaux IDs...")
+
+        mapping_anciens_ids = {}  # ancien_id -> nouvel_id
+
+        for nouvel_id, personne_data in enumerate(sauvegarde, start=1):
+            # Créer la nouvelle personne avec nouvel ID
+            nouvelle_personne = Personne(
+                id=nouvel_id,
+                nom=personne_data['nom'],
+                prenom=personne_data['prenom'],
+                age=personne_data['age'],
+                sexe=personne_data['sexe'],
+                profession=personne_data['profession'],
+                salaire=personne_data['salaire'],
+                age_limite=personne_data['age_limite'],
+                situation_matrimoniale=personne_data['situation_matrimoniale'],
+                pays_residence=personne_data['pays_residence'],
+                pays_sinistre=personne_data['pays_sinistre']
+            )
+
+            session.add(nouvelle_personne)
+            session.flush()  # Pour s'assurer que l'ID est bien attribué
+
+            # Stocker le mapping d'ID
+            mapping_anciens_ids[personne_data['ancien_id']] = nouvel_id
+
+            # Réinsérer les enfants
+            for enfant_data in personne_data['enfants']:
+                enfant = Enfant(
+                    nom=enfant_data['nom'],
+                    prenom=enfant_data['prenom'],
+                    age=enfant_data['age'],
+                    sexe=enfant_data['sexe'],
+                    handicap_majeur=enfant_data['handicap_majeur'],
+                    orphelin_double=enfant_data['orphelin_double'],
+                    poursuit_etudes=enfant_data['poursuit_etudes'],
+                    prejudice_economique=enfant_data['prejudice_economique'],
+                    prejudice_moral=enfant_data['prejudice_moral'],
+                    proportion=enfant_data['proportion'],
+                    personne_id=nouvel_id  # ⚠️ Référence correcte vers le nouvel ID
+                )
+                session.add(enfant)
+
+            # Réinsérer les conjoints
+            for conjoint_data in personne_data['conjoints']:
+                conjoint = Conjoint(
+                    nom=conjoint_data['nom'],
+                    prenom=conjoint_data['prenom'],
+                    age=conjoint_data['age'],
+                    sexe=conjoint_data['sexe'],
+                    prejudice_economique=conjoint_data['prejudice_economique'],
+                    prejudice_moral=conjoint_data['prejudice_moral'],
+                    proportion=conjoint_data['proportion'],
+                    personne_id=nouvel_id  # ⚠️ Référence correcte
+                )
+                session.add(conjoint)
+
+            # Réinsérer les ascendants
+            for ascendant_data in personne_data['ascendants']:
+                ascendant = Ascendant(
+                    nom=ascendant_data['nom'],
+                    prenom=ascendant_data['prenom'],
+                    age=ascendant_data['age'],
+                    sexe=ascendant_data['sexe'],
+                    prejudice_economique=ascendant_data['prejudice_economique'],
+                    prejudice_moral=ascendant_data['prejudice_moral'],
+                    proportion=ascendant_data['proportion'],
+                    personne_id=nouvel_id  # ⚠️ Référence correcte
+                )
+                session.add(ascendant)
+
+            # Réinsérer les collatéraux
+            for collateral_data in personne_data['collateraux']:
+                collateral = Collateral(
+                    nom=collateral_data['nom'],
+                    prenom=collateral_data['prenom'],
+                    age=collateral_data['age'],
+                    prejudice_economique=collateral_data['prejudice_economique'],
+                    prejudice_moral=collateral_data['prejudice_moral'],
+                    proportion=collateral_data['proportion'],
+                    personne_id=nouvel_id  # ⚠️ Référence correcte
+                )
+                session.add(collateral)
+
+        # Réactiver les contraintes et commit final
+        session.execute(text("PRAGMA foreign_keys=ON"))
+        session.commit()
+
+        print(f"✅ Réorganisation terminée avec succès!")
+        print(f"   {len(sauvegarde)} personnes réinsérées")
+        print(f"   IDs séquentiels: 1 à {len(sauvegarde)}")
+
+        return True
+
+    except Exception as e:
+        session.rollback()
+        session.execute(text("PRAGMA foreign_keys=ON"))  # Réactiver en cas d'erreur
+        print(f"❌ Erreur lors de la réorganisation: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+    finally:
+        session.close()
+
+
+def supprimer_et_reorganiser_ids(personne_id):
+    supprimer_ayants_droits(personne_id)
+    supprimer_personne(personne_id)
+    reorganiser_base_completement()
+    pass
 
 
 if __name__ == '__main__':

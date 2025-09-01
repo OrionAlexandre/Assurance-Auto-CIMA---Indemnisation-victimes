@@ -1,5 +1,3 @@
-import decimal
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap, QIcon, QAction
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QLabel, QPushButton, \
@@ -9,7 +7,7 @@ from custom_widget import WidgetContainer, RepartitionWidget, CustomLabelName, P
     CustomCalculusQWidget, ListVictime, ListConjoints, ListEnfants, ListAscendants, ListCollateraux, \
     CustomAyantsDroitsList
 from api import data_contoller, format_nombre_fr, laod_default_personne_alive, error_logger
-from database_manager import rechercher_personne_par_id, ajouter_personne_data_base, Personne
+from database_manager import rechercher_personne_par_id, ajouter_personne_data_base, Personne, Enfant, Conjoint, Ascendant, Collateral
 
 from algorithm.tables import SituationMatrimoniale, smig_pays_cima_2025, AGE_LIMITE, NiveauPrejudice, list_pays_cima
 from algorithm.profils import Enfant, Conjoint, Ascendant, Collateral
@@ -18,11 +16,12 @@ from algorithm.alive import FraisDeTraitement, IncapaciteTemporaire, IncapaciteP
     PretiumDoloris, PrejudiceEsthetique, PrejudicePerteDeGainsProfessinnelsFuturs, PrejudiceScolaire, \
     PrejudiceMoralConjoint
 
-from database_manager import supprimer_et_reorganiser_ids
+from database_manager import supprimer_et_reorganiser_ids, Session
 
 
 class NouveauProfil(QDialog):
     def __init__(self, personne: Personne | None = None, personne_indexe: int = 0):
+        from database_manager import Personne
         super().__init__()
 
         self.setModal(True)
@@ -56,22 +55,23 @@ class NouveauProfil(QDialog):
             else:
                 data_contoller.call_fonction(key="close_profil_dead")
         else:
+
             self.personne = personne
             self.modification = True
             self.personne_index = personne_indexe
 
             self.setWindowTitle(f"Modification du profil de {self.personne.nom} {self.personne.prenom}")
 
-        self.enfants = self.personne.enfants
-        self.conjoints = self.personne.conjoints
-        self.ascendants = self.personne.ascendants
-        self.collateraux = self.personne.collateraux
+        self.enfants = self.personne.enfants.copy()
+        self.conjoints = self.personne.conjoints.copy()
+        self.ascendants = self.personne.ascendants.copy()
+        self.collateraux = self.personne.collateraux.copy()
 
-        self.list_view_enfant = QListWidget()
-        self.list_view_conjoint = QListWidget()
-        self.list_view_ascendant = QListWidget()
-        self.list_view_collateral = QListWidget()
-
+        print("Fin de la copie.........")
+        print("Longueur liste enfants :", len(self.enfants))
+        print("Longueur liste conjoints :", len(self.conjoints))
+        print("Longueur liste ascendants :", len(self.ascendants))
+        print("Longueur liste collatéraux :", len(self.collateraux))
 
         self.main_layout = QVBoxLayout(self)
         self.setStyleSheet("""
@@ -764,281 +764,308 @@ class NouveauProfil(QDialog):
         pass
 
     def __action_supprimer_enfant(self, index):
-        self.personne.enfants.pop(index)
+        self.enfants.pop(index)
 
         self.enfants_list.clear()
-        for individu in self.personne.enfants:
+        for individu in self.enfants:
             self.enfants_list.addItem(
                 f"Nom : {individu.nom} \nPrénom : {individu.prenom} \nAge: {individu.age} ans \nSexe : {individu.sexe} \nPoursuit les études : {"Oui" if individu.poursuit_etudes else "Non"} \nHandicap majeur à vie : {"Oui" if individu.handicap_majeur else "Non"}")
         pass
 
     def __action_supprimer_conjoint(self, index):
-        self.personne.conjoints.pop(index)
+        self.conjoints.pop(index)
 
         self.conjoints_list.clear()
-        for conjoint in self.personne.conjoints:
+        for conjoint in self.conjoints:
             self.conjoints_list.addItem(
                 f"Nom : {conjoint.nom}\nPrénom : {conjoint.prenom}\nAge : {conjoint.age} ans\nSexe: {conjoint.sexe}")
         pass
 
     def __action_supprimer_collateral(self, index):
-        self.personne.collateraux.pop(index)
+        self.collateraux.pop(index)
 
         self.collateraux_list.clear()
-        for collateral in self.personne.collateraux:
+        for collateral in self.collateraux:
             self.collateraux_list.addItem(
                 f"Nom : {collateral.nom}\nAge : {collateral.prenom}\nSexe : {collateral.age} ans")
         pass
 
     def __action_supprimer_ascendant(self, index):
-        self.personne.ascendants.pop(index)
+        self.ascendants.pop(index)
 
         self.ascendants_list.clear()
-        for ascendant in self.personne.ascendants:
+        for ascendant in self.ascendants:
             self.ascendants_list.addItem(
                 f"Nom : {ascendant.nom}\nPrénom : {ascendant.prenom}\n Age : {ascendant.age} ans\nSexe: {ascendant.sexe}")
         pass
 
     def ajouter_individu(self, type_: str):
-        match type_:
-            case "Ascendant":
+        from database_manager import Personne, Enfant, Conjoint, \
+            Ascendant, Collateral
+        try:
+            match type_:
+                case "Ascendant":
 
-                nom = self.nouveau_nom.text()
-                prenom = self.nouveau_prenom.text()
-                age = self.nouvel_age.text()
-                sexe = self.nouveau_sexe.currentText()
+                    nom = self.nouveau_nom.text()
+                    prenom = self.nouveau_prenom.text()
+                    age = self.nouvel_age.text()
+                    sexe = self.nouveau_sexe.currentText()
 
-                if not nom or not prenom:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+                    if not nom or not prenom:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+                        return
+
+                    try:
+                        int(age)
+                    except:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
+                        return
+
+                    try:
+                        int(age) > 100
+                    except:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
+                        return
+
+                    if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.ascendants]:
+                        return
+
+                    ascendant = Ascendant(nom=nom,
+                                          prenom=prenom,
+                                          age=age,
+                                          sexe=sexe)
+                    try:
+                        self.ascendants.append(ascendant)
+
+                        # Réinitialisation de l'affichage.
+                        self.ascendants_list.clear()
+                        for ascendant in self.ascendants:
+                            self.ascendants_list.addItem(
+                                f"Nom : {ascendant.nom}\nPrénom : {ascendant.prenom}\n Age : {ascendant.age} ans\nSexe: {ascendant.sexe}")
+                    except Exception as e:
+                        print(e)
                     return
+                case "Conjoint":
 
-                try:
-                    int(age)
-                except:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
+                    nom = self.nouveau_nom.text()
+                    prenom = self.nouveau_prenom.text()
+                    age = self.nouvel_age.text()
+                    sexe = self.nouveau_sexe.currentText()
+
+                    if not nom or not prenom:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+                        return
+
+                    try:
+                        int(age)
+                    except:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
+                        return
+
+                    try:
+                        int(age) > 100
+                    except:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
+                        return
+
+                    if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.conjoints]:
+                        return
+
+                    conjoint = Conjoint(nom=nom,
+                                        prenom=prenom,
+                                        age=age,
+                                        sexe=sexe)
+                    self.conjoints.append(conjoint)
+
+                    # Réinitialisation de l'affichage.
+                    self.conjoints_list.clear()
+                    for conjoint in self.conjoints:
+                        self.conjoints_list.addItem(
+                            f"Nom : {conjoint.nom}\nPrénom : {conjoint.prenom}\nAge : {conjoint.age} ans\nSexe: {conjoint.sexe}")
                     return
+                case "Collatéral":
 
-                try:
-                    int(age) > 100
-                except:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
+                    nom = self.nouveau_nom.text()
+                    prenom = self.nouveau_prenom.text()
+                    age = self.nouvel_age.text()
+
+                    if not nom or not prenom:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+                        return
+
+                    try:
+                        int(age)
+                    except:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
+                        return
+
+                    try:
+                        int(age) > 100
+                    except:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
+                        return
+
+                    if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.collateraux]:
+                        return
+
+                    collateral = Collateral(nom=nom,
+                                            prenom=prenom,
+                                            age=age)
+                    self.collateraux.append(collateral)
+
+                    # Réinitialisation de l'affichage.
+                    self.collateraux_list.clear()
+                    for collateral in self.collateraux:
+                        self.collateraux_list.addItem(
+                            f"Nom : {collateral.nom}\nAge : {collateral.prenom}\nSexe : {collateral.age} ans")
+                    print()
                     return
+                case "Enfant":
 
-                if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.ascendants]:
-                    return
+                    nom = self.nouveau_nom.text()
+                    prenom = self.nouveau_prenom.text()
+                    age = self.nouvel_age.text()
 
-                ascendant = Ascendant(nom=nom,
-                                      prenom=prenom,
-                                      age=age,
-                                      sexe=sexe)
+                    if not nom or not prenom:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+                        return
 
-                self.personne.ascendants.append(ascendant)
+                    try:
+                        int(age)
+                    except:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
+                        return
 
-                # Réinitialisation de l'affichage.
-                self.ascendants_list.clear()
-                for ascendant in self.personne.ascendants:
-                    self.ascendants_list.addItem(
-                        f"Nom : {ascendant.nom}\nPrénom : {ascendant.prenom}\n Age : {ascendant.age} ans\nSexe: {ascendant.sexe}")
-            case "Conjoint":
+                    try:
+                        int(age) > 100
+                    except:
+                        QMessageBox.critical(None, "Erreur",
+                                             f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
+                        return
 
-                nom = self.nouveau_nom.text()
-                prenom = self.nouveau_prenom.text()
-                age = self.nouvel_age.text()
-                sexe = self.nouveau_sexe.currentText()
+                    if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.enfants]:
+                        return
 
-                if not nom or not prenom:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
-                    return
+                    sexe = self.nouveau_sexe.currentText()
+                    etudes = self.nouveau_etudes.isChecked()
+                    handicap_majeur = self.nouveau_handicap_majeur.isChecked()
+                    orpehlin_double = self.nouveau_orphelin_double.isChecked()
 
-                try:
-                    int(age)
-                except:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
-                    return
-
-                try:
-                    int(age) > 100
-                except:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
-                    return
-
-                if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.conjoints]:
-                    return
-
-                conjoint = Conjoint(nom=nom,
+                    enfant = Enfant(nom=nom,
                                     prenom=prenom,
                                     age=age,
-                                    sexe=sexe)
-                self.personne.conjoints.append(conjoint)
+                                    sexe=sexe,
+                                    poursuit_etudes=etudes,
+                                    handicap_majeur=handicap_majeur,
+                                    orphelin_double=orpehlin_double)
 
-                # Réinitialisation de l'affichage.
-                self.conjoints_list.clear()
-                for conjoint in self.personne.conjoints:
-                    self.conjoints_list.addItem(
-                        f"Nom : {conjoint.nom}\nPrénom : {conjoint.prenom}\nAge : {conjoint.age} ans\nSexe: {conjoint.sexe}")
-            case "Collatéral":
+                    self.enfants.append(enfant)
 
-                nom = self.nouveau_nom.text()
-                prenom = self.nouveau_prenom.text()
-                age = self.nouvel_age.text()
-
-                if not nom or not prenom:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+                    self.enfants_list.clear()
+                    for individu in self.enfants:
+                        self.enfants_list.addItem(
+                            f"Nom : {individu.nom} \nPrénom : {individu.prenom} \nAge: {individu.age} ans \nSexe : {individu.sexe} \nPoursuit les études : {"Oui" if individu.poursuit_etudes else "Non"} \nHandicap majeur à vie : {"Oui" if individu.handicap_majeur else "Non"}")
                     return
-
-                try:
-                    int(age)
-                except:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
-                    return
-
-                try:
-                    int(age) > 100
-                except:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
-                    return
-
-                if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.collateraux]:
-                    return
-
-                collateral = Collateral(nom=nom,
-                                        prenom=prenom,
-                                        age=age)
-                self.personne.collateraux.append(collateral)
-
-                # Réinitialisation de l'affichage.
-                self.collateraux_list.clear()
-                for collateral in self.personne.collateraux:
-                    self.collateraux_list.addItem(
-                        f"Nom : {collateral.nom}\nAge : {collateral.prenom}\nSexe : {collateral.age} ans")
-                print()
-            case "Enfant":
-
-                nom = self.nouveau_nom.text()
-                prenom = self.nouveau_prenom.text()
-                age = self.nouvel_age.text()
-                sexe = self.nouveau_sexe.currentText()
-                etudes = self.nouveau_etudes.isChecked()
-                handicap_majeur = self.nouveau_handicap_majeur.isChecked()
-                orpehlin_double = self.nouveau_orphelin_double.isChecked()
-
-                if not nom or not prenom:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
-                    return
-
-                try:
-                    int(age)
-                except:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
-                    return
-
-                try:
-                    int(age) > 100
-                except:
-                    QMessageBox.critical(None, "Erreur",
-                                         f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
-                    return
-
-                if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.enfants]:
-                    return
-
-                enfant = Enfant(nom=nom,
-                                prenom=prenom,
-                                age=age,
-                                sexe=sexe,
-                                poursuit_etudes=etudes,
-                                handicap_majeur=handicap_majeur,
-                                orphelin_double=orpehlin_double)
-
-                self.personne.enfants.append(enfant)
-
-                self.enfants_list.clear()
-                for individu in self.personne.enfants:
-                    self.enfants_list.addItem(
-                        f"Nom : {individu.nom} \nPrénom : {individu.prenom} \nAge: {individu.age} ans \nSexe : {individu.sexe} \nPoursuit les études : {"Oui" if individu.poursuit_etudes else "Non"} \nHandicap majeur à vie : {"Oui" if individu.handicap_majeur else "Non"}")
-
+        except Exception as e:
+            print(e)
         pass
 
     def valider_enregistrement(self):
-        nom = self.profil_nom_le.text()
-        prenom = self.profil_prenom_le.text()
-        age = self.profil_age_le.text()
-        profession = self.profil_profession_le.text()
-        salaire = self.profil_salaire_le.text()
-        situation_matrimoniale = self.profil_matrimoniale_cb.currentText()
-        sexe = self.profil_sexe_cb.currentText()
-        pays_r = self.profil_pays_residence_cb.currentText()
-        pays_s = self.profil_pays_sinistre_cb.currentText()
-
-        if not nom or not prenom:
-            QMessageBox.critical(None, "Erreur",
-                                 f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
-            return
-
         try:
-            int(age)
-        except:
-            QMessageBox.critical(None, "Erreur",
-                                 f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
-            return
+            nom = self.profil_nom_le.text()
+            prenom = self.profil_prenom_le.text()
+            age = self.profil_age_le.text()
+            profession = self.profil_profession_le.text()
+            salaire = self.profil_salaire_le.text()
+            situation_matrimoniale = self.profil_matrimoniale_cb.currentText()
+            sexe = self.profil_sexe_cb.currentText()
+            pays_r = self.profil_pays_residence_cb.currentText()
+            pays_s = self.profil_pays_sinistre_cb.currentText()
 
-        try:
-            int(age) > 100
-        except:
-            QMessageBox.critical(None, "Erreur",
-                                 f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
-            return
+            if not nom or not prenom:
+                QMessageBox.critical(None, "Erreur",
+                                     f"Le nom et le prénom sont exigés.\nEchec de l'enrégistrement.")
+                return
 
-        try:
-            float(salaire)
-        except:
-            QMessageBox.critical(None, "Erreur",
-                                 f"Le salaire doit être une valeur numérique sans espaces.\nEchec de l'enrégistrement.")
-            return
-
-        personne = Personne(
-            nom=nom,
-            prenom=prenom,
-            age=int(age),
-            profession=profession,
-            salaire=float(salaire),
-            situation_matrimoniale=situation_matrimoniale,
-            pays_residence=pays_r,
-            pays_sinistre=pays_s,
-            sexe=sexe,
-            age_limite=AGE_LIMITE,
-            enfants=self.personne.enfants,
-            conjoints=self.personne.conjoints,
-            ascendants=self.personne.ascendants,
-            collateraux=self.personne.collateraux
-        )
-
-        if self.modification:
             try:
-                supprimer_et_reorganiser_ids(self.personne_index)
+                int(age)
+            except:
+                QMessageBox.critical(None, "Erreur",
+                                     f"L'âge doit être une valeur numérique sans espace.\nEchec de l'enrégistrement.")
+                return
+
+            try:
+                int(age) > 100
+            except:
+                QMessageBox.critical(None, "Erreur",
+                                     f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
+                return
+
+            try:
+                float(salaire)
+            except:
+                QMessageBox.critical(None, "Erreur",
+                                     f"Le salaire doit être une valeur numérique sans espaces.\nEchec de l'enrégistrement.")
+                return
+
+            print("Début process de validation........")
+            print("Longueur liste enfants :", len(self.enfants))
+            print("Longueur liste conjoints :", len(self.conjoints))
+            print("Longueur liste ascendants :", len(self.ascendants))
+            print("Longueur liste collatéraux :", len(self.collateraux))
+
+            personne = Personne(
+                nom=nom,
+                prenom=prenom,
+                age=int(age),
+                profession=profession,
+                salaire=float(salaire),
+                situation_matrimoniale=situation_matrimoniale,
+                pays_residence=pays_r,
+                pays_sinistre=pays_s,
+                sexe=sexe,
+                age_limite=AGE_LIMITE,
+                enfants=self.enfants,
+                conjoints=self.conjoints,
+                ascendants=self.ascendants,
+                collateraux=self.collateraux
+            )
+
+            if self.modification:
+                try:
+                    supprimer_et_reorganiser_ids(self.personne_index)
+                except Exception as e:
+                    print(e)
+                    return
+
+            try:
+                ajouter_personne_data_base(personne)
+
+                print("Fin process de validation........")
+                print("Longueur liste enfants :", len(self.enfants))
+                print("Longueur liste conjoints :", len(self.conjoints))
+                print("Longueur liste ascendants :", len(self.ascendants))
+                print("Longueur liste collatéraux :", len(self.collateraux))
             except Exception as e:
                 print(e)
                 return
 
-        try:
-            ajouter_personne_data_base(personne)
+            QMessageBox.information(None, "Enregistrement", "Enregistrement effectué avec succès")
+            self.close()
+            pass
         except Exception as e:
             print(e)
-            return
-
-        QMessageBox.information(None, "Enregistrement", "Enregistrement effectué avec succès")
-        pass
 
     pass
 
@@ -1277,7 +1304,7 @@ class ListProfilsAlive(QDialog):
 
         selected_row = self.__list_vitimes.currentRow()
 
-        if selected_row <= 0:
+        if selected_row < 0:
             print("Aucun élément sélectionné")
             QMessageBox.critical(None, "Erreur", "Choisissez une victime.")
             return
@@ -1309,7 +1336,10 @@ class ListProfilsAlive(QDialog):
         self.__list_ascendants.clear()
         self.__list_collateraux.clear()
 
-        supprimer_et_reorganiser_ids(selected_row + 1)
+        try:
+            supprimer_et_reorganiser_ids(selected_row + 1)
+        except Exception as e:
+            print(e)
         pass
 
     def __afficher_menu_contextuel(self, position):
@@ -1602,7 +1632,7 @@ class ListProfilsDead(QDialog):
 
         selected_row = self.__list_vitimes.currentRow()
 
-        if selected_row <= 0:
+        if selected_row < 0:
             print("Aucun élément sélectionné")
             QMessageBox.critical(None, "Erreur", "Choisissez une victime.")
             return
@@ -1933,9 +1963,13 @@ class ProfilAlive(QWidget):
             self.modifier_profile.clicked.connect(self.charger_profil)
 
         def charger_profil(self):
-            charger_profil = ListProfilsAlive()
-            charger_profil.show()
-            charger_profil.exec()
+            try:
+                charger_profil = ListProfilsAlive()
+                charger_profil.show()
+                charger_profil.exec()
+            except Exception as e:
+                print(e)
+                return
 
         pass
 
@@ -2194,9 +2228,13 @@ class ProfilDead(QWidget):
             self.modifier_profile.clicked.connect(self.charger_profil)
 
         def charger_profil(self):
-            charger_profil = ListProfilsDead()
-            charger_profil.show()
-            charger_profil.exec()
+            try:
+                charger_profil = ListProfilsDead()
+                charger_profil.show()
+                charger_profil.exec()
+            except Exception as e:
+                print(e)
+                return
 
         pass
 
@@ -2403,14 +2441,16 @@ class IncapaciteWidget(CustomCalculusQWidget):
         duree_it = self.duree_line_edit.text()
 
         if not taux_it or not duree_it:
+            data_contoller.save_data(key="indemnite_it", value=0.0)
             pass
 
         try:
-            taux_it_int = int(taux_it)
+            taux_it_int = float(taux_it)
             duree_it_int = int(duree_it)
 
             if taux_it_int > 100:
                 self.__red_label_it.show()
+                data_contoller.save_data(key="indemnite_it", value=0.0)
                 return
 
             self.__red_label_it.hide()
@@ -2420,6 +2460,7 @@ class IncapaciteWidget(CustomCalculusQWidget):
             data_contoller.save_data(key="indemnite_it", value=indemnite)
         except:
             self.__red_label_it.show()
+            data_contoller.save_data(key="indemnite_it", value=0.0)
             self.lbl_result.setText("000 000 000 F CFA")
             return
 
@@ -2432,14 +2473,44 @@ class IncapaciteWidget(CustomCalculusQWidget):
         salaire_apres_sinistre = self.salaire_apres_accident_line_edit.text()
 
         if not taux_ip or not salaire_apres_sinistre:
-            pass
+            data_contoller.save_data(key="taux_ip", value=0.0)
+            data_contoller.save_data(key="indemnite_ip", value=0.0)
+            data_contoller.save_data(key="prejudice_economique", value=0.0)
+            data_contoller.save_data(key="prejudice_physiologique",
+                                     value=0.0)
+            data_contoller.save_data(key="prejudice_moral", value=0.0)
+            data_contoller.save_data(key="smig_annuel", value=0.0)
+            data_contoller.save_data(key="salaire_apres_sinistre", value=0.0)
+
+            # Loading extra functions for printing others results.
+            data_contoller.call_fonction(key="calculate_prejduice_economique")
+            data_contoller.call_fonction(key="calculate_prejduice_physiologique")
+            data_contoller.call_fonction(key="calculate_prejduice_moral")
+            data_contoller.call_fonction(key="calculate_assistance_tierce_personne")
+            data_contoller.call_fonction(key="prejudice_moral_conjoint")
+            return
 
         try:
-            taux_ip_int = int(taux_ip)
+            taux_ip_int = float(taux_ip)
             salaire_apres_sinistre_int = int(salaire_apres_sinistre)
 
             if taux_ip_int > 100:
                 self.__red_label_ip.show()
+                data_contoller.save_data(key="taux_ip", value=0.0)
+                data_contoller.save_data(key="indemnite_ip", value=0.0)
+                data_contoller.save_data(key="prejudice_economique", value=0.0)
+                data_contoller.save_data(key="prejudice_physiologique",
+                                         value=0.0)
+                data_contoller.save_data(key="prejudice_moral", value=0.0)
+                data_contoller.save_data(key="smig_annuel", value=0.0)
+                data_contoller.save_data(key="salaire_apres_sinistre", value=0.0)
+
+                # Loading extra functions for printing others results.
+                data_contoller.call_fonction(key="calculate_prejduice_economique")
+                data_contoller.call_fonction(key="calculate_prejduice_physiologique")
+                data_contoller.call_fonction(key="calculate_prejduice_moral")
+                data_contoller.call_fonction(key="calculate_assistance_tierce_personne")
+                data_contoller.call_fonction(key="prejudice_moral_conjoint")
                 return
 
             self.__red_label_ip.hide()
@@ -2479,6 +2550,22 @@ class IncapaciteWidget(CustomCalculusQWidget):
             print(e)
             self.__red_label_ip.show()
             self.lbl_result.setText("000 000 000 F CFA")
+
+            data_contoller.save_data(key="taux_ip", value=0.0)
+            data_contoller.save_data(key="indemnite_ip", value=0.0)
+            data_contoller.save_data(key="prejudice_economique", value=0.0)
+            data_contoller.save_data(key="prejudice_physiologique",
+                                     value=0.0)
+            data_contoller.save_data(key="prejudice_moral", value=0.0)
+            data_contoller.save_data(key="smig_annuel", value=0.0)
+            data_contoller.save_data(key="salaire_apres_sinistre", value=0.0)
+
+            # Loading extra functions for printing others results.
+            data_contoller.call_fonction(key="calculate_prejduice_economique")
+            data_contoller.call_fonction(key="calculate_prejduice_physiologique")
+            data_contoller.call_fonction(key="calculate_prejduice_moral")
+            data_contoller.call_fonction(key="calculate_assistance_tierce_personne")
+            data_contoller.call_fonction(key="prejudice_moral_conjoint")
             return
 
         pass
@@ -3015,10 +3102,11 @@ class PrejudiceMoralConjointWIdget(CustomCalculusQWidget):
             taux_ip = data_contoller.load_data(key="taux_ip")
 
             if int(taux_ip) != 100:
-                self.lbl_taux.setText("-%")
-                self.lbl_sit_mat.setText("-")
+                self.lbl_taux.setText("Doit être égal à 100%")
+                self.lbl_sit_mat.setText("Doit avoir au moins 1 conjoint.")
                 self.lbl_result.setText("000 000 000 F CFA")
                 print("Taux d'IP invalide:", taux_ip, "%")
+                data_contoller.save_data(key="prejudice_moral_conjoint", value=0.0)
                 return
 
             print("Taux d'IP valide:", taux_ip, "%")
@@ -3344,7 +3432,7 @@ class RecapitulatifVictimeBlessee(QDialog):
                          data_contoller.load_data(key="prejudice_scolaire"),
                          data_contoller.load_data(key="prejudice_moral_conjoint")])
 
-            self.output_data.total.setText(f"{total} F CFA")
+            self.output_data.total.setText(f"{format_nombre_fr(total)} F CFA")
 
         except Exception as e:
             print(e)
