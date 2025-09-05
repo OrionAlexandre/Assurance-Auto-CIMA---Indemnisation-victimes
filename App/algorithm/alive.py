@@ -2,9 +2,8 @@
 Ce fichier contiendra l'algorithme relatif au calcul de l'indemnité des victimes ayant
 survécues à un sinistre automibile.
 """
-
-from algorithm.profils import Personne
-from algorithm.tables import (smig_pays_cima_2025, ValeurPointIP, TableTemporaire21, TableTemporaire25, TableTemporaire55,
+from profils import Personne
+from tables import (smig_pays_cima_2025, ValeurPointIP, TableTemporaire21, TableTemporaire25, TableTemporaire55,
                     TableTemporaire60, TableTemporaire65, TableViagere100)
 
 
@@ -53,7 +52,7 @@ class IncapaciteTemporaire:
 
     @property
     def __salaire_moyen_journalier(self):
-        return self.personne.salaire / 30
+        return self.personne.salaire / 30 if self.personne.salaire != 0 else self.smig / 30
 
     # Le cas d'une victime salariée ou pouvant justifier d'une mensualité.
     def incapacite_temporaire_partielle(self) -> float:
