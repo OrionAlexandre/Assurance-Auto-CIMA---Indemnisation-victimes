@@ -3931,7 +3931,7 @@ class RecapitulatifVictimeDecedee(QDialog):
         self.__separator.setStyleSheet("background-color: #060270")
         self.main_layout.addWidget(self.__separator)
 
-        self.main_layout.addWidget(QLabel("Cumul des préjudices physiologiques :"))
+        self.main_layout.addWidget(QLabel("Cumul des préjudices économiques :"))
         self.main_layout.addWidget(self.output_data.prejudice_economique)
         self.main_layout.addWidget(QLabel("Cumul des préjudices moraux :"))
         self.main_layout.addWidget(self.output_data.prejudice_moral)
