@@ -1746,6 +1746,7 @@ class ProfilAlive(QWidget):
                     }
                     QLabel {
                         background: rgba(0, 0, 0, 0);
+                        color: white;
                     }
                     QLabel#label_intitule {
                         font-size: 15pt;
@@ -2010,6 +2011,7 @@ class ProfilDead(QWidget):
                     }
                     QLabel {
                         background: rgba(0, 0, 0, 0);
+                        color: white;
                     }
                     QLabel#label_intitule {
                         font-size: 15pt;
