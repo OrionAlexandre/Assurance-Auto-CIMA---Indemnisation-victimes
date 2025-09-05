@@ -3405,7 +3405,7 @@ class RecapitulatifVictimeBlessee(QDialog):
         self.__separator.setStyleSheet("background-color: #060270")
         self.main_layout.addWidget(self.__separator)
 
-        label_total = QLabel("Total à provisions :")
+        label_total = QLabel("Total à provisionner :")
         label_total.setStyleSheet("font-weight: bold; margin-bottom: 3px;")
         self.main_layout.addWidget(label_total)
         self.main_layout.addWidget(self.output_data.total)
@@ -3943,7 +3943,7 @@ class RecapitulatifVictimeDecedee(QDialog):
         self.__separator.setStyleSheet("background-color: #060270")
         self.main_layout.addWidget(self.__separator)
 
-        label_total = QLabel("Total à provisions :")
+        label_total = QLabel("Total à provisionner :")
         label_total.setStyleSheet("font-weight: bold; margin-bottom: 3px;")
         self.main_layout.addWidget(label_total)
         self.main_layout.addWidget(self.output_data.total)
