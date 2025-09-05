@@ -2,8 +2,8 @@
 Ce fichier contiendra l'algorithme relatif au calcul de l'indemnité des victimes ayant
 survécues à un sinistre automibile.
 """
-from profils import Personne
-from tables import (smig_pays_cima_2025, ValeurPointIP, TableTemporaire21, TableTemporaire25, TableTemporaire55,
+from .profils import Personne
+from .tables import (smig_pays_cima_2025, ValeurPointIP, TableTemporaire21, TableTemporaire25, TableTemporaire55,
                     TableTemporaire60, TableTemporaire65, TableViagere100)
 
 
