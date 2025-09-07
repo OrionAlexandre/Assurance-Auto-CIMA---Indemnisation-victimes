@@ -3,7 +3,7 @@ Ce fichier contiendra le ou les modèles de données qui serviront à alimenter 
 de calcul.
 """
 
-from algorithm.profils import Personne, Enfant, Conjoint, Ascendant
+from .profils import Personne, Enfant, Conjoint, Ascendant
 from abc import ABC, abstractmethod
 
 
@@ -446,7 +446,7 @@ class Repartition(ABC):
         self.enfants_orphelins_double: int = 0
 
         self.repartition() # On appelle la fonction qui met à jour les différentes valeurs.
-        # Il s'agit d'une méthode à implémenter dans la classe héritant de celle-ci présente.
+        # Il s'agit d'une méthode à implémenter dans la classe héritant de celle-ci présente alors classe parente.
 
     @abstractmethod
     def repartition(self):

@@ -1,8 +1,8 @@
-from algorithm.alive import IncapaciteTemporaire, IncapacitePermanente
-from algorithm.dead import PrejudiceEconomiqueConjoints, ControlePlafondPrejudiceEconomique, PrejudiceEconomiqueEnfants
-from algorithm.profils import Enfant, Conjoint, Personne
+from .alive import IncapaciteTemporaire, IncapacitePermanente
+from .dead import PrejudiceEconomiqueConjoints, ControlePlafondPrejudiceEconomique, PrejudiceEconomiqueEnfants
+from .profils import Enfant, Conjoint, Personne
 
-from algorithm.tables import SituationMatrimoniale
+from .tables import SituationMatrimoniale
 
 # Les fonctions d'affichage des résultats issus des tests.
 def afficher_prejudice_economique_enfants(personne: Personne, pe_enfants: PrejudiceEconomiqueEnfants):

@@ -4,8 +4,8 @@ succombées à un sinistre automibile.
 """
 import logging
 
-from algorithm.profils import Personne, Enfant, Conjoint
-from algorithm.tables import smig_pays_cima_2025, Repartition, TableTemporaire25, TableViagere100, AGE_MAJORITE
+from .profils import Personne, Enfant, Conjoint
+from .tables import smig_pays_cima_2025, Repartition, TableTemporaire25, TableViagere100, AGE_MAJORITE
 
 
 # Configuration
@@ -15,6 +15,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%d/%m/%Y %H:%M:%S"
 )
+
 
 class CleDeRepartition(Repartition):
     def __init__(self, personne: Personne):
