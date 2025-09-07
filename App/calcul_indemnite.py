@@ -830,7 +830,8 @@ class NouveauProfil(QDialog):
                                              f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
                         return
 
-                    if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.ascendants]:
+                    if any((nom, prenom) == (ascendant.nom, ascendant.prenom) for ascendant in
+                           self.ascendants):
                         return
 
                     ascendant = Ascendant(nom=nom,
@@ -874,7 +875,7 @@ class NouveauProfil(QDialog):
                                              f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
                         return
 
-                    if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.conjoints]:
+                    if any((nom, prenom) == (conjoint.nom, conjoint.prenom) for conjoint in self.conjoints):
                         return
 
                     conjoint = Conjoint(nom=nom,
@@ -914,7 +915,7 @@ class NouveauProfil(QDialog):
                                              f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
                         return
 
-                    if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.collateraux]:
+                    if any((nom, prenom) == (collateral.nom, collateral.prenom) for collateral in self.collateraux):
                         return
 
                     collateral = Collateral(nom=nom,
@@ -954,7 +955,7 @@ class NouveauProfil(QDialog):
                                              f"L'âge ne saurait être supérieur à 100.\nCe n'est pas prévu par le code CIMA.\nEchec de l'enrégistrement.")
                         return
 
-                    if (nom, prenom) in [(ascendant.nom, ascendant.prenom) for ascendant in self.personne.enfants]:
+                    if any((nom, prenom) == (enfant.nom, enfant.prenom) for enfant in self.enfants):
                         return
 
                     sexe = self.nouveau_sexe.currentText()
