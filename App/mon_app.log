@@ -1,34 +1,80 @@
-05/09/2025 21:42:09 - INFO - Entrée dans la méthode de répartition
+08/09/2025 11:31:12 - INFO - Entrée dans la méthode de répartition
 -----------------------------------------------------------------
 -----------------------------------------------------------------
                               Préjudice économique 
 -----------------------------------------------------------------
 Plafond : 65507460
 Part de chaque enfant :
-  - CURRIE Antoinette : 0.0 F CFA
-  - CURRIE Paul : 45051300.0 F CFA
+  - ENF ENF : 65419200.0 F CFA
+  - ENF_ ENF_ : 59087700.0 F CFA
 Proportion de chaque enfant :
-  - CURRIE Antoinette : 0.0%
-  - CURRIE Paul : 0.0%
+  - ENF ENF : 0.0%
+  - ENF_ ENF_ : 0.0%
 Part de chaque conjoint :
-  - CURRIE Pierre : 215695200.0 F CFA
+  - C C : 223171200.0 F CFA
 Proportion de chaque conjoint :
-  - CURRIE Pierre : 0.0%
+  - C C : 0.0%
 
-05/09/2025 21:42:09 - INFO - Sortie de la méthode de répartition
+08/09/2025 11:31:12 - INFO - Sortie de la méthode de répartition
 -----------------------------------------------------------------
 -----------------------------------------------------------------
                               Préjudice économique 
 -----------------------------------------------------------------
 Plafond : 65507460
 Part de chaque enfant :
-  - CURRIE Antoinette : 0.0 F CFA
-  - CURRIE Paul : 11318258.28 F CFA
+  - ENF ENF : 11787301.7 F CFA
+  - ENF_ ENF_ : 10646485.23 F CFA
 Proportion de chaque enfant :
-  - CURRIE Antoinette : 0.0%
-  - CURRIE Paul : 17.28%
+  - ENF ENF : 17.99%
+  - ENF_ ENF_ : 16.25%
 Part de chaque conjoint :
-  - CURRIE Pierre : 54189201.72 F CFA
+  - C C : 40211226.44 F CFA
 Proportion de chaque conjoint :
-  - CURRIE Pierre : 82.72%
+  - C C : 61.38%
+
+08/09/2025 11:40:24 - INFO - Entrée dans la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 65507460
+Part de chaque enfant :
+  - ENF ENF : 65419200.0 F CFA
+  - ENF_ ENF_ : 59087700.0 F CFA
+Proportion de chaque enfant :
+  - ENF ENF : 0.0%
+  - ENF_ ENF_ : 0.0%
+Part de chaque conjoint :
+  - C C : 223171200.0 F CFA
+Proportion de chaque conjoint :
+  - C C : 0.0%
+Part de chaque ascendant :
+  - A A : 6596100.0 F CFA
+  - AE A : 9290400.0 F CFA
+Proportion de chaque ascendant :
+  - A A : 0.0%
+  - AE A : 0.0%
+
+08/09/2025 11:40:24 - INFO - Sortie de la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 65507460
+Part de chaque enfant :
+  - ENF ENF : 11787301.7 F CFA
+  - ENF_ ENF_ : 10646485.23 F CFA
+Proportion de chaque enfant :
+  - ENF ENF : 17.99%
+  - ENF_ ENF_ : 16.25%
+Part de chaque conjoint :
+  - C C : 40211226.44 F CFA
+Proportion de chaque conjoint :
+  - C C : 61.38%
+Part de chaque ascendant :
+  - A A : 1188492.38 F CFA
+  - AE A : 1673954.25 F CFA
+Proportion de chaque ascendant :
+  - A A : 1.81%
+  - AE A : 2.56%
 

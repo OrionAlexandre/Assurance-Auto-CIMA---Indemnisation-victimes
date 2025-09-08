@@ -4,7 +4,7 @@ succombées à un sinistre automibile.
 """
 import logging
 
-from .profils import Personne, Enfant, Conjoint
+from .profils import Personne, Enfant, Conjoint, Ascendant
 from .tables import smig_pays_cima_2025, Repartition, TableTemporaire25, TableViagere100, AGE_MAJORITE
 
 
@@ -132,7 +132,7 @@ class PrejudiceEconomiqueEnfants:
         # La valeur du préjudice économique à partager entre les enfants de la victime décédée.
         # Le nombre d'enfants.
         nombre_enfants = len(self.personne.enfants)
-        return self.taux_enfants() * self.revenu_net_annuel  / nombre_enfants
+        return self.taux_enfants() * self.revenu_net_annuel / nombre_enfants
 
     def valeur_pour_chaque_enfant(self):
         """
@@ -251,7 +251,8 @@ class ControlePlafondPrejudiceEconomique:
         # On détermine le montant du préjudice économique.
         liste_pe_enfants = [enfant.prejudice_economique for enfant in self.personne.enfants]
         liste_pe_conjoints = [conjoint.prejudice_economique for conjoint in self.personne.conjoints]
-        return sum([*liste_pe_enfants, *liste_pe_conjoints])
+        liste_pe_ascendants = [ascendant.prejudice_economique for ascendant in self.personne.ascendants]
+        return sum([*liste_pe_enfants, *liste_pe_conjoints, *liste_pe_ascendants])
 
     @property
     def plafond_depasse(self) -> bool:
@@ -272,24 +273,30 @@ class ControlePlafondPrejudiceEconomique:
         # Détermination des proportions au niveau des conjoints.
         self.__determination_des_proportions(list_personnes=self.personne.conjoints)
 
+        # Détermination des proportions au niveau des ascendants.
+        self.__determination_des_proportions(list_personnes=self.personne.ascendants)
+
         # Réassignation des nouvelles parts aux enfants.
         self.__reatribution_des_indemnites(list_personnes=self.personne.enfants)
 
         # Réassignation des nouvelles parts aux conjoints.
         self.__reatribution_des_indemnites(list_personnes=self.personne.conjoints)
 
+        # Réassignation des nouvelles parts aux ascendants.
+        self.__reatribution_des_indemnites(list_personnes=self.personne.ascendants)
+
         # Renseignement du fichier log
         self.__info_fichier_log(entree=False) # Nous sommes à la sortie.
         pass
 
-    def __determination_des_proportions(self, list_personnes: list[Enfant] | list[Conjoint]):
+    def __determination_des_proportions(self, list_personnes: list[Enfant] | list[Conjoint] | list[Ascendant]):
         # On ramène le préjudice économqie de chaque personne au montant total afin de trouver la proportion dans laquelle
         # il est indemnisé par rapport aux autres.
         for personne in list_personnes:
             personne.proportion = personne.prejudice_economique / self.total_prejudice_economique
         pass
 
-    def __reatribution_des_indemnites(self, list_personnes: list[Enfant] | list[Conjoint]):
+    def __reatribution_des_indemnites(self, list_personnes: list[Enfant] | list[Conjoint] | list[Ascendant]):
         # On multiplie la proportion de chaque ayant droit par le plafond afin de rester dans les mêmes cotités.
         for personne in list_personnes:
             personne.prejudice_economique = personne.proportion * self.plafond
@@ -303,17 +310,26 @@ class ControlePlafondPrejudiceEconomique:
         message += "-" * 65 + "\n"
         message += f"Plafond : {self.plafond}\n"
         message += "Part de chaque enfant :\n"
+
         for enfant in self.personne.enfants:
             message += f"  - {enfant.nom} {enfant.prenom} : {round(enfant.prejudice_economique, 2)} F CFA\n"
         message += "Proportion de chaque enfant :\n"
         for enfant in self.personne.enfants:
             message += f"  - {enfant.nom} {enfant.prenom} : {round(enfant.proportion * 100, 2)}%\n"
+
         message += "Part de chaque conjoint :\n"
         for conjoint in self.personne.conjoints:
             message += f"  - {conjoint.nom} {conjoint.prenom} : {round(conjoint.prejudice_economique, 2)} F CFA\n"
         message += "Proportion de chaque conjoint :\n"
         for conjoint in self.personne.conjoints:
             message += f"  - {conjoint.nom} {conjoint.prenom} : {round(conjoint.proportion * 100, 2)}%\n"
+
+        message += "Part de chaque ascendant :\n"
+        for ascendant in self.personne.ascendants:
+            message += f"  - {ascendant.nom} {ascendant.prenom} : {round(ascendant.prejudice_economique, 2)} F CFA\n"
+        message += "Proportion de chaque ascendant :\n"
+        for ascendant in self.personne.ascendants:
+            message += f"  - {ascendant.nom} {ascendant.prenom} : {round(ascendant.proportion * 100, 2)}%\n"
 
         logging.info(message)
         pass
