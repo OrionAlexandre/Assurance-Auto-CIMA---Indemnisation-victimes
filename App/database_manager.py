@@ -142,7 +142,7 @@ def ajouter_personne_data_base(personne_instance: Personne) -> Personne:
         session.commit()
 
         # print(f"✅ Personne ajoutée avec ID: {personne_instance.id}")
-        return personne_instance
+        # return personne_instance
 
     except Exception as e:
         session.rollback()

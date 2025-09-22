@@ -1,38 +1,4 @@
-08/09/2025 11:31:12 - INFO - Entrée dans la méthode de répartition
------------------------------------------------------------------
------------------------------------------------------------------
-                              Préjudice économique 
------------------------------------------------------------------
-Plafond : 65507460
-Part de chaque enfant :
-  - ENF ENF : 65419200.0 F CFA
-  - ENF_ ENF_ : 59087700.0 F CFA
-Proportion de chaque enfant :
-  - ENF ENF : 0.0%
-  - ENF_ ENF_ : 0.0%
-Part de chaque conjoint :
-  - C C : 223171200.0 F CFA
-Proportion de chaque conjoint :
-  - C C : 0.0%
-
-08/09/2025 11:31:12 - INFO - Sortie de la méthode de répartition
------------------------------------------------------------------
------------------------------------------------------------------
-                              Préjudice économique 
------------------------------------------------------------------
-Plafond : 65507460
-Part de chaque enfant :
-  - ENF ENF : 11787301.7 F CFA
-  - ENF_ ENF_ : 10646485.23 F CFA
-Proportion de chaque enfant :
-  - ENF ENF : 17.99%
-  - ENF_ ENF_ : 16.25%
-Part de chaque conjoint :
-  - C C : 40211226.44 F CFA
-Proportion de chaque conjoint :
-  - C C : 61.38%
-
-08/09/2025 11:40:24 - INFO - Entrée dans la méthode de répartition
+09/09/2025 10:46:02 - INFO - Entrée dans la méthode de répartition
 -----------------------------------------------------------------
 -----------------------------------------------------------------
                               Préjudice économique 
@@ -55,7 +21,7 @@ Proportion de chaque ascendant :
   - A A : 0.0%
   - AE A : 0.0%
 
-08/09/2025 11:40:24 - INFO - Sortie de la méthode de répartition
+09/09/2025 10:46:02 - INFO - Sortie de la méthode de répartition
 -----------------------------------------------------------------
 -----------------------------------------------------------------
                               Préjudice économique 
@@ -77,4 +43,222 @@ Part de chaque ascendant :
 Proportion de chaque ascendant :
   - A A : 1.81%
   - AE A : 2.56%
+
+09/09/2025 12:17:01 - INFO - Entrée dans la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 65507460
+Part de chaque enfant :
+  - ENF ENF : 65419200.0 F CFA
+  - ENF_ ENF_ : 59087700.0 F CFA
+Proportion de chaque enfant :
+  - ENF ENF : 0.0%
+  - ENF_ ENF_ : 0.0%
+Part de chaque conjoint :
+  - C C : 223171200.0 F CFA
+Proportion de chaque conjoint :
+  - C C : 0.0%
+Part de chaque ascendant :
+  - A A : 6596100.0 F CFA
+  - AE A : 9290400.0 F CFA
+Proportion de chaque ascendant :
+  - A A : 0.0%
+  - AE A : 0.0%
+
+09/09/2025 12:17:01 - INFO - Sortie de la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 65507460
+Part de chaque enfant :
+  - ENF ENF : 11787301.7 F CFA
+  - ENF_ ENF_ : 10646485.23 F CFA
+Proportion de chaque enfant :
+  - ENF ENF : 17.99%
+  - ENF_ ENF_ : 16.25%
+Part de chaque conjoint :
+  - C C : 40211226.44 F CFA
+Proportion de chaque conjoint :
+  - C C : 61.38%
+Part de chaque ascendant :
+  - A A : 1188492.38 F CFA
+  - AE A : 1673954.25 F CFA
+Proportion de chaque ascendant :
+  - A A : 1.81%
+  - AE A : 2.56%
+
+09/09/2025 16:33:09 - INFO - Entrée dans la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 61200000
+Part de chaque enfant :
+  - EINSTEIN Bésso : 20400046.92 F CFA
+  - EINSTEIN Jeannette : 18283285.8 F CFA
+Proportion de chaque enfant :
+  - EINSTEIN Bésso : 0.0%
+  - EINSTEIN Jeannette : 0.0%
+Part de chaque conjoint :
+  - EINSTEIN Juliette : 90410490.72 F CFA
+Proportion de chaque conjoint :
+  - EINSTEIN Juliette : 0.0%
+Part de chaque ascendant :
+  - EINSTEIN Hubert : 2688064.14 F CFA
+  - EINSTEIN Justine : 3715456.08 F CFA
+Proportion de chaque ascendant :
+  - EINSTEIN Hubert : 0.0%
+  - EINSTEIN Justine : 0.0%
+
+09/09/2025 16:33:09 - INFO - Sortie de la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 61200000
+Part de chaque enfant :
+  - EINSTEIN Bésso : 9214076.36 F CFA
+  - EINSTEIN Jeannette : 8258000.2 F CFA
+Proportion de chaque enfant :
+  - EINSTEIN Bésso : 15.06%
+  - EINSTEIN Jeannette : 13.49%
+Part de chaque conjoint :
+  - EINSTEIN Juliette : 40835649.49 F CFA
+Proportion de chaque conjoint :
+  - EINSTEIN Juliette : 66.72%
+Part de chaque ascendant :
+  - EINSTEIN Hubert : 1214116.24 F CFA
+  - EINSTEIN Justine : 1678157.71 F CFA
+Proportion de chaque ascendant :
+  - EINSTEIN Hubert : 1.98%
+  - EINSTEIN Justine : 2.74%
+
+12/09/2025 10:40:53 - INFO - Entrée dans la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 53550000
+Part de chaque enfant :
+  - Montfort Antoinette : 18487000.0 F CFA
+  - VIANNEY Lucy : 60046000.0 F CFA
+  - VIANNEY Marc : 101801000.0 F CFA
+Proportion de chaque enfant :
+  - Montfort Antoinette : 0.0%
+  - VIANNEY Lucy : 0.0%
+  - VIANNEY Marc : 0.0%
+Part de chaque conjoint :
+  - Desfontaines Nico : 237938400.0 F CFA
+Proportion de chaque conjoint :
+  - Desfontaines Nico : 0.0%
+Part de chaque ascendant :
+Proportion de chaque ascendant :
+
+12/09/2025 10:40:53 - INFO - Sortie de la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 53550000
+Part de chaque enfant :
+  - Montfort Antoinette : 2366828.05 F CFA
+  - VIANNEY Lucy : 7687486.19 F CFA
+  - VIANNEY Marc : 13033237.55 F CFA
+Proportion de chaque enfant :
+  - Montfort Antoinette : 4.42%
+  - VIANNEY Lucy : 14.36%
+  - VIANNEY Marc : 24.34%
+Part de chaque conjoint :
+  - Desfontaines Nico : 30462448.2 F CFA
+Proportion de chaque conjoint :
+  - Desfontaines Nico : 56.89%
+Part de chaque ascendant :
+Proportion de chaque ascendant :
+
+12/09/2025 12:36:00 - INFO - Entrée dans la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 53550000
+Part de chaque enfant :
+  - Vianney Antoinette : 18515000.0 F CFA
+  - Vianney Lucy : 60046000.0 F CFA
+  - Vianney Marc : 101801000.0 F CFA
+Proportion de chaque enfant :
+  - Vianney Antoinette : 0.0%
+  - Vianney Lucy : 0.0%
+  - Vianney Marc : 0.0%
+Part de chaque conjoint :
+  - Desfontaines Nico : 237938400.0 F CFA
+Proportion de chaque conjoint :
+  - Desfontaines Nico : 0.0%
+Part de chaque ascendant :
+Proportion de chaque ascendant :
+
+12/09/2025 12:36:00 - INFO - Sortie de la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 53550000
+Part de chaque enfant :
+  - Vianney Antoinette : 2370254.13 F CFA
+  - Vianney Lucy : 7686971.61 F CFA
+  - Vianney Marc : 13032365.14 F CFA
+Proportion de chaque enfant :
+  - Vianney Antoinette : 4.43%
+  - Vianney Lucy : 14.35%
+  - Vianney Marc : 24.34%
+Part de chaque conjoint :
+  - Desfontaines Nico : 30460409.12 F CFA
+Proportion de chaque conjoint :
+  - Desfontaines Nico : 56.88%
+Part de chaque ascendant :
+Proportion de chaque ascendant :
+
+22/09/2025 10:49:58 - INFO - Entrée dans la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 53550000
+Part de chaque enfant :
+  - Vianney Antoinette : 18515000.0 F CFA
+  - Vianney Lucy : 60046000.0 F CFA
+  - Vianney Marc : 101801000.0 F CFA
+Proportion de chaque enfant :
+  - Vianney Antoinette : 0.0%
+  - Vianney Lucy : 0.0%
+  - Vianney Marc : 0.0%
+Part de chaque conjoint :
+  - Desfontaines Nico : 237938400.0 F CFA
+Proportion de chaque conjoint :
+  - Desfontaines Nico : 0.0%
+Part de chaque ascendant :
+Proportion de chaque ascendant :
+
+22/09/2025 10:49:58 - INFO - Sortie de la méthode de répartition
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+                              Préjudice économique 
+-----------------------------------------------------------------
+Plafond : 53550000
+Part de chaque enfant :
+  - Vianney Antoinette : 2370254.13 F CFA
+  - Vianney Lucy : 7686971.61 F CFA
+  - Vianney Marc : 13032365.14 F CFA
+Proportion de chaque enfant :
+  - Vianney Antoinette : 4.43%
+  - Vianney Lucy : 14.35%
+  - Vianney Marc : 24.34%
+Part de chaque conjoint :
+  - Desfontaines Nico : 30460409.12 F CFA
+Proportion de chaque conjoint :
+  - Desfontaines Nico : 56.88%
+Part de chaque ascendant :
+Proportion de chaque ascendant :
 

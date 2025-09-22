@@ -800,7 +800,7 @@ class NouveauProfil(QDialog):
         pass
 
     def ajouter_individu(self, type_: str):
-        from database_manager import Personne, Enfant, Conjoint, \
+        from database_manager import Enfant, Conjoint, \
             Ascendant, Collateral
         try:
             match type_:
@@ -1043,28 +1043,35 @@ class NouveauProfil(QDialog):
                 collateraux=self.collateraux
             )
 
-            if self.modification:
-                try:
-                    supprimer_et_reorganiser_ids(self.personne_index)
-                except Exception as e:
-                    print(e)
-                    return
-
             try:
                 ajouter_personne_data_base(personne)
 
-                print("Fin process de validation........")
-                print("Longueur liste enfants :", len(self.enfants))
-                print("Longueur liste conjoints :", len(self.conjoints))
-                print("Longueur liste ascendants :", len(self.ascendants))
-                print("Longueur liste collatéraux :", len(self.collateraux))
+                if self.modification:
+                    try:
+                        supprimer_et_reorganiser_ids(self.personne_index)
+                    except Exception as e:
+                        print(e)
+                        return
+                QMessageBox.information(None, "Enregistrement", "Enregistrement effectué avec succès")
+                self.close()
+
+                """
+                if data_contoller.load_profil_alive:
+                    data_contoller.call_fonction(key="close_list_profil_alive")
+                    #data_contoller.call_fonction(key="load_charger_profil_alive")
+                else:
+                    data_contoller.call_fonction(key="close_list_profil_dead")
+                    #data_contoller.call_fonction(key="load_charger_profil_dead")
+                    pass
+                """
+
+
             except Exception as e:
+                QMessageBox.critical(None, "Enregistrement", f"Echec de l'enregistrement pour raison suivante :\n{e}")
                 print(e)
                 return
-
-            QMessageBox.information(None, "Enregistrement", "Enregistrement effectué avec succès")
-            self.close()
             pass
+
         except Exception as e:
             print(e)
 
@@ -1240,6 +1247,8 @@ class ListProfilsAlive(QDialog):
         self.supprimer_profil_btn.clicked.connect(self.__supprimer_profil)
         button_layout.addWidget(self.supprimer_profil_btn)
 
+        data_contoller.add_callable_function(key="close_list_profil_alive", func=self.close_list_profil_alive)
+
 
     def nouveau_profil(self):
         nouveau_profil = NouveauProfil()
@@ -1318,6 +1327,11 @@ class ListProfilsAlive(QDialog):
 
         # Fermeture de la QDialog.
         self.close()
+
+        # Annulation des anciens calculs.
+        data_contoller.set_all_value_null()
+        data_contoller.call_fonction("set_frais_null")
+        data_contoller.call_fonction("set_incapacite_null")
         pass
 
     def __supprimer_profil(self):
@@ -1398,6 +1412,9 @@ class ListProfilsAlive(QDialog):
         nouveau_profil.show()
         nouveau_profil.exec()
         pass
+
+    def close_list_profil_alive(self):
+        self.close()
 
 
 class ListProfilsDead(QDialog):
@@ -1569,6 +1586,8 @@ class ListProfilsDead(QDialog):
         self.supprimer_profil_btn.clicked.connect(self.__supprimer_profil)
         button_layout.addWidget(self.supprimer_profil_btn)
 
+        data_contoller.add_callable_function(key="close_list_profil_dead", func=self.close_list_profil_dead)
+
     def nouveau_profil(self):
         nouveau_profil = NouveauProfil()
         nouveau_profil.show()
@@ -1724,6 +1743,9 @@ class ListProfilsDead(QDialog):
         nouveau_profil.show()
         nouveau_profil.exec()
         pass
+
+    def close_list_profil_dead(self):
+        self.close()
 
 
 class ProfilAlive(QWidget):
@@ -1963,6 +1985,8 @@ class ProfilAlive(QWidget):
                 """)
 
             self.modifier_profile.clicked.connect(self.charger_profil)
+
+            data_contoller.add_callable_function(key="load_charger_profil_alive", func=self.charger_profil)
 
         def charger_profil(self):
             try:
@@ -2230,6 +2254,8 @@ class ProfilDead(QWidget):
 
             self.modifier_profile.clicked.connect(self.charger_profil)
 
+            data_contoller.add_callable_function(key="load_charger_profil_dead", func=self.charger_profil)
+
         def charger_profil(self):
             try:
                 charger_profil = ListProfilsDead()
@@ -2299,6 +2325,8 @@ class FraisWidget(CustomCalculusQWidget):
         self.cumul_line_edit.editingFinished.connect(self.focus_out_or_entry)
         self.honoraires_line_edit.editingFinished.connect(self.focus_out_or_entry)
 
+        data_contoller.add_callable_function(key="set_frais_null", func=self.set_frais_null)
+
     def focus_out_or_entry(self):
         valeur_cumul = self.cumul_line_edit.text()
         valeur_honoraire = self.honoraires_line_edit.text()
@@ -2318,6 +2346,13 @@ class FraisWidget(CustomCalculusQWidget):
             self.__red_label.show()
             self.lbl_result.setText("000 000 000 F CFA")
             return
+        pass
+
+    def set_frais_null(self):
+        self.__red_label.hide()
+        self.cumul_line_edit.setText(f"{0.0}")
+        self.honoraires_line_edit.setText(f"{0.0}")
+        self.lbl_result.setText("000 000 000 F CFA")
         pass
     pass
 
@@ -2429,6 +2464,8 @@ class IncapaciteWidget(CustomCalculusQWidget):
 
         self.ip_line_edit.textChanged.connect(self.ip_result)
         self.salaire_apres_accident_line_edit.textChanged.connect(self.ip_result)
+
+        data_contoller.add_callable_function(key="set_incapacite_null", func=self.set_incapacite_null)
 
 
     def change_widget(self, current_text):
@@ -2573,6 +2610,21 @@ class IncapaciteWidget(CustomCalculusQWidget):
 
         pass
 
+    def set_incapacite_null(self):
+        self.__red_label_it.hide()
+        self.lbl_result.setText("000 000 000 F CFA")
+        self.it_line_edit.setText(f"{0}")
+        self.duree_line_edit.setText(f"{0}")
+        self.ip_line_edit.setText(f"{0}")
+        self.salaire_apres_accident_line_edit.setText(f"{0}")
+
+        # Loading extra functions for printing others results (With nulls values).
+        data_contoller.call_fonction(key="calculate_prejduice_economique")
+        data_contoller.call_fonction(key="calculate_prejduice_physiologique")
+        data_contoller.call_fonction(key="calculate_prejduice_moral")
+        data_contoller.call_fonction(key="calculate_assistance_tierce_personne")
+        data_contoller.call_fonction(key="prejudice_moral_conjoint")
+        pass
     pass
 
 
@@ -2617,6 +2669,7 @@ class PrejudiceEconomiqueWidget(CustomCalculusQWidget):
         self.lbl_smig_annuel_result.setText(f"{format_nombre_fr(data_contoller.load_data(key='smig_annuel'))} F CFA")
         self.lbl_result.setText(f"{format_nombre_fr(data_contoller.load_data(key='prejudice_economique'))} F CFA")
         pass
+
 
     pass
 
@@ -3705,7 +3758,7 @@ class RepartitionAyantsDroitWidget(ScrollableWidget):
 
         self.setFixedHeight(300)
         # self.container.setMinimumWidth(total_width)
-        self.container.setFixedWidth(2940) # 2200 valeur limite.
+        self.container.setFixedWidth(2200) # 2200 est la valeur limite.
 
         widgets = [
             RepartitionEnfants(),

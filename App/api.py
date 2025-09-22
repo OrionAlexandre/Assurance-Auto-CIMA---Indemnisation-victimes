@@ -238,6 +238,12 @@ class DataController:
     def load_data(self, key: str):
         return self.__data_dict.get(key)
 
+    def set_all_value_null(self):
+        for key in ["frais_cumul", "indemnite_it", "indemnite_ip", "assistance_tp",
+                    "perte_gain_pro", "prejudice_scolaire", "prejudice_moral_conjoint"]:
+            self.save_data(key=key, value=0.0)
+        pass
+
 #=======================================================================================================================
 
 def format_nombre_fr(nombre, decimales=2):
