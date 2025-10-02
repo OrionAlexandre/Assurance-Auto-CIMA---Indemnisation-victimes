@@ -68,6 +68,7 @@ scroll_style = """
         }
         """
 
+
 class MenuButton(QPushButton):
     def __init__(self, icon_path: str, text: str = "Menu button"):
         super().__init__(text=text)

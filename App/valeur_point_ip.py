@@ -1,20 +1,10 @@
-import sys
-
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QIcon, QPixmap
-from PyQt6.QtWidgets import QWidget, QApplication, QLabel, QHBoxLayout, QVBoxLayout, QListWidget, QMessageBox, QDialog, \
-    QGridLayout, QLineEdit, QComboBox, QStackedLayout, QListView, QStackedWidget, QCheckBox, QPushButton, QMenu
+from PyQt6.QtGui import QPixmap, QIcon
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QGridLayout, QLineEdit
 
-from algorithm.dead import PrejudiceEconomiqueConjoints, ControlePlafondPrejudiceEconomique, PrejudiceEconomiqueEnfants,\
-    PrejudiceMoral, ControlePlafondPrejudiceMoral
-from algorithm.profils import Enfant, Conjoint, Personne, Ascendant, Collateral
+from algorithm.profils import Personne
+from algorithm.tables import SituationMatrimoniale, ValeurPointIP
 
-from algorithm.tables import SituationMatrimoniale, AGE_LIMITE, list_pays_cima, ValeurPointIP
-from database_manager import ajouter_personne_data_base, supprimer_et_reorganiser_ids
-from api import data_contoller
-
-
-app = QApplication(sys.argv)
 
 class ValeurPoinIPWidget(QDialog):
     def __init__(self):
@@ -370,18 +360,3 @@ class ValeurPoinIPWidget(QDialog):
                 return
     pass
 
-
-
-main_window = QWidget()
-main_window.setStyleSheet("""background-color: qlineargradient(
-        x1:0, y1:0, x2:1, y2:1,
-        stop:0 #B9D5F9,
-        stop:0.6 #e8f2ff,
-        stop:1 #d0e3ff
-    );""")
-main_layout = QHBoxLayout(main_window)
-main_layout.addWidget(ValeurPoinIPWidget())
-main_window.show()
-
-if __name__ == '__main__':
-    sys.exit(app.exec())

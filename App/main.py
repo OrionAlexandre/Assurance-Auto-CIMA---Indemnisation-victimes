@@ -5,6 +5,7 @@ from custom_widget import ButtonContainer, MenuButton
 
 # Import des différentes pages
 from calcul_indemnite import VictimeBlessee, VictimeDecedee, GestionGroupe
+from valeur_point_ip import ValeurPoinIPWidget
 
 
 
@@ -107,6 +108,11 @@ class StackPages(QStackedWidget):
 
     def show_gestion_groupe(self):
         self.setCurrentWidget(self.gestion_groupe)
+
+    def show_vip_dialogue_widget(self):
+        vip_dialogue_widget = ValeurPoinIPWidget()
+        vip_dialogue_widget.show()
+        vip_dialogue_widget.exec()
     pass
 
 
@@ -144,6 +150,8 @@ class MainWindow(QWidget):
         self.menu_bar.button_group.but_victime_blessee.clicked.connect(self.pages.show_victime_blessee)
         self.menu_bar.button_group.but_victime_decedee.clicked.connect(self.pages.show_victime_decedee)
         self.menu_bar.button_group.but_groupe.clicked.connect(self.pages.show_gestion_groupe)
+
+        self.menu_bar.button_group.but_valeur_ip.clicked.connect(self.pages.show_vip_dialogue_widget)
 
     pass
 
