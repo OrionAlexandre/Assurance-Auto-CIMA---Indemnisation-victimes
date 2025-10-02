@@ -79,59 +79,17 @@ class ErrorLogger:
 error_logger = ErrorLogger()
 
 #=======================================================================================================================
-jean_pascal = Enfant(
-            nom="TEST",
-            prenom="Jean Pascal",
-            age=12,
-            sexe="M",
-            handicap_majeur=True,
-            orphelin_double=True
-        )
-jean_lucien = Enfant(
-            nom="TEST",
-            prenom="Jean Lucien",
-            age=18,
-            sexe="M",
-            handicap_majeur=False,
-            orphelin_double=True
-        )
-rosalie = Enfant(
-            nom="TEST",
-            prenom="Rosalie",
-            age=23,
-            sexe="F",
-            handicap_majeur=False,
-        )
-rene = Enfant(
-    nom="TEST",
-    prenom="René",
-    age=15,
-    sexe="M",
-    handicap_majeur=False,
-)
-marie = Conjoint(
-    nom="TEST",
-    prenom="Marie",
-    age=35,
-    sexe="F",
-)
-germaine = Conjoint(
-    nom="TEST",
-    prenom="Germaine",
-    age=40,
-    sexe="F",
-)
 default_personne = Personne(
-    nom="TEST",
-    prenom="Test",
-    age=23,
+    nom="-",
+    prenom="-",
+    age=0,
     sexe="M",
-    profession="Profession test",
-    salaire=445000,
+    profession="-",
+    salaire=0.0,
     age_limite=60,
     situation_matrimoniale=SituationMatrimoniale.CELIBATAIRE,
-    conjoints=[marie, germaine],
-    enfants=[rosalie, rene, jean_pascal, jean_lucien],
+    conjoints=[],
+    enfants=[],
     ascendants=[],
     collateraux=[],
     pays_residence="Togo",

@@ -1053,17 +1053,12 @@ class NouveauProfil(QDialog):
                         print(e)
                         return
                 QMessageBox.information(None, "Enregistrement", "Enregistrement effectué avec succès")
-                self.close()
 
-                """
-                if data_contoller.load_profil_alive:
-                    data_contoller.call_fonction(key="close_list_profil_alive")
-                    #data_contoller.call_fonction(key="load_charger_profil_alive")
-                else:
-                    data_contoller.call_fonction(key="close_list_profil_dead")
-                    #data_contoller.call_fonction(key="load_charger_profil_dead")
-                    pass
-                """
+                # data_contoller.add_callable_function(key="relaod_liste_victimes_dead", func=self.__list_vitimes.reload_content)
+                # Appel de la méthode de recharge de la liste des victimes.
+                data_contoller.call_fonction(key="relaod_liste_victimes")
+
+                self.close()
 
 
             except Exception as e:
@@ -1102,6 +1097,8 @@ class ListProfilsAlive(QDialog):
         self.__list_conjoints = ListConjoints(self.__list_vitimes.personne)
         self.__list_ascendants = ListAscendants(self.__list_vitimes.personne)
         self.__list_collateraux = ListCollateraux(self.__list_vitimes.personne)
+
+        data_contoller.add_callable_function(key="relaod_liste_victimes", func=self.__list_vitimes.reload_content)
 
         # self.__list_vitimes.itemDoubleClicked.connect(self.__item_double_clicked) # Le double click
         # servira à charger les données.
@@ -1247,9 +1244,6 @@ class ListProfilsAlive(QDialog):
         self.supprimer_profil_btn.clicked.connect(self.__supprimer_profil)
         button_layout.addWidget(self.supprimer_profil_btn)
 
-        data_contoller.add_callable_function(key="close_list_profil_alive", func=self.close_list_profil_alive)
-
-
     def nouveau_profil(self):
         nouveau_profil = NouveauProfil()
         nouveau_profil.show()
@@ -1344,7 +1338,7 @@ class ListProfilsAlive(QDialog):
             QMessageBox.critical(None, "Erreur", "Choisissez une victime.")
             return
 
-        self.__list_vitimes.takeItem(selected_row)
+        # self.__list_vitimes.takeItem(selected_row)
 
         self.__list_enfants.clear()
         self.__list_conjoints.clear()
@@ -1353,6 +1347,7 @@ class ListProfilsAlive(QDialog):
 
         try:
             supprimer_et_reorganiser_ids(selected_row + 1)
+            self.__list_vitimes.reload_content()
         except Exception as e:
             print(e)
         pass
@@ -1413,9 +1408,6 @@ class ListProfilsAlive(QDialog):
         nouveau_profil.exec()
         pass
 
-    def close_list_profil_alive(self):
-        self.close()
-
 
 class ListProfilsDead(QDialog):
     def __init__(self):
@@ -1441,6 +1433,8 @@ class ListProfilsDead(QDialog):
         self.__list_conjoints = ListConjoints(self.__list_vitimes.personne)
         self.__list_ascendants = ListAscendants(self.__list_vitimes.personne)
         self.__list_collateraux = ListCollateraux(self.__list_vitimes.personne)
+
+        data_contoller.add_callable_function(key="relaod_liste_victimes", func=self.__list_vitimes.reload_content)
 
         # self.__list_vitimes.itemDoubleClicked.connect(self.__item_double_clicked) # Le double click
         # servira à charger les données.
@@ -1586,8 +1580,6 @@ class ListProfilsDead(QDialog):
         self.supprimer_profil_btn.clicked.connect(self.__supprimer_profil)
         button_layout.addWidget(self.supprimer_profil_btn)
 
-        data_contoller.add_callable_function(key="close_list_profil_dead", func=self.close_list_profil_dead)
-
     def nouveau_profil(self):
         nouveau_profil = NouveauProfil()
         nouveau_profil.show()
@@ -1678,14 +1670,19 @@ class ListProfilsDead(QDialog):
             QMessageBox.critical(None, "Erreur", "Choisissez une victime.")
             return
 
-        self.__list_vitimes.takeItem(selected_row)
+        # self.__list_vitimes.takeItem(selected_row) # Suppression de l'individu dans la liste des victimes sur l'interface.
+        # Pas très utile puisqu'il y a une recharge complète de la liste.
 
         self.__list_enfants.clear()
         self.__list_conjoints.clear()
         self.__list_ascendants.clear()
         self.__list_collateraux.clear()
 
-        supprimer_et_reorganiser_ids(selected_row + 1)
+        try :
+            supprimer_et_reorganiser_ids(selected_row + 1)
+            self.__list_vitimes.reload_content()
+        except Exception as e:
+            print("e")
         pass
 
     def __afficher_menu_contextuel(self, position):
@@ -1743,9 +1740,6 @@ class ListProfilsDead(QDialog):
         nouveau_profil.show()
         nouveau_profil.exec()
         pass
-
-    def close_list_profil_dead(self):
-        self.close()
 
 
 class ProfilAlive(QWidget):

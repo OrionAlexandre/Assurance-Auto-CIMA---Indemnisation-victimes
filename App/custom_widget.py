@@ -789,6 +789,23 @@ class ListVictime(CustomAyantsDroitsList):
 
         self.personne = rechercher_personne_par_id(1)  # Par défaut la première personne.
 
+    def __clear_all(self):
+        self.clear()
+        pass
+
+    def reload_content(self):
+        self.__clear_all()
+
+        self.liste_personnes = personnes()
+
+        for personne in self.liste_personnes:
+            self.addItem(f"{personne.id} - {personne.nom} - {personne.prenom} - Sexe : {personne.sexe}")
+
+        self.personne = rechercher_personne_par_id(1)  # Par défaut la première personne.
+
+        print("Liste rechargée complètement !!!")
+        pass
+
     pass
 
 
