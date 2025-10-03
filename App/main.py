@@ -6,7 +6,7 @@ from custom_widget import ButtonContainer, MenuButton
 # Import des différentes pages
 from calcul_indemnite import VictimeBlessee, VictimeDecedee, GestionGroupe
 from valeur_point_ip import ValeurPoinIPWidget
-
+from rente_viagere import TableRentesPermanenteWidget
 
 
 class App(QApplication):
@@ -19,7 +19,7 @@ class MenuBar(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setFixedSize(269, 750)
+        self.setFixedSize(280, 750)
         self.setStyleSheet("""background-color: qlineargradient(
                 x1:0, y1:0, x2:1, y2:1,
                 stop:0 #B9D5F9,
@@ -72,8 +72,8 @@ class MenuBar(QWidget):
             self.but_groupe = MenuButton(text="Gestion par groupe", icon_path="assets/053-group.png")
 
             self.but_valeur_ip = MenuButton(text="Valeur du point d'IP", icon_path="assets/031-pulse.png")
-            self.but_tabl_temporaires = MenuButton(text="Table de rentes temporaires", icon_path="assets/012-tabs.png")
-            self.but_tabl_viagieres = MenuButton(text="Table de rentes permanentes", icon_path="assets/064-browsers.png")
+            self.but_tabl_temporaires = MenuButton(text="Barèmes - rentes temporaires", icon_path="assets/012-tabs.png")
+            self.but_tabl_viagieres = MenuButton(text="Barèmes - rentes viagères", icon_path="assets/064-browsers.png")
 
             self.but_historique = MenuButton(text="Historique", icon_path="assets/038-time.png")
             self.but_methodes_calcul = MenuButton(text="Méthode de calcul", icon_path="assets/073-calculator.png")
@@ -113,6 +113,11 @@ class StackPages(QStackedWidget):
         vip_dialogue_widget = ValeurPoinIPWidget()
         vip_dialogue_widget.show()
         vip_dialogue_widget.exec()
+
+    def show_rentes_viageres_dialogue_widget(self):
+        rvd_w = TableRentesPermanenteWidget()
+        rvd_w.show()
+        rvd_w.exec()
     pass
 
 
@@ -152,6 +157,7 @@ class MainWindow(QWidget):
         self.menu_bar.button_group.but_groupe.clicked.connect(self.pages.show_gestion_groupe)
 
         self.menu_bar.button_group.but_valeur_ip.clicked.connect(self.pages.show_vip_dialogue_widget)
+        self.menu_bar.button_group.but_tabl_viagieres.clicked.connect(self.pages.show_rentes_viageres_dialogue_widget)
 
     pass
 
