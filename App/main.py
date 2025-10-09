@@ -7,6 +7,7 @@ from custom_widget import ButtonContainer, MenuButton
 from calcul_indemnite import VictimeBlessee, VictimeDecedee, GestionGroupe
 from valeur_point_ip import ValeurPoinIPWidget
 from rente_viagere import TableRentesPermanenteWidget
+from rente_temporaire import TableRentesTemporaireWidget
 
 
 class App(QApplication):
@@ -118,6 +119,11 @@ class StackPages(QStackedWidget):
         rvd_w = TableRentesPermanenteWidget()
         rvd_w.show()
         rvd_w.exec()
+
+    def show_rentes_temp_dialogue_widget(self):
+        rvd_w = TableRentesTemporaireWidget()
+        rvd_w.show()
+        rvd_w.exec()
     pass
 
 
@@ -158,6 +164,7 @@ class MainWindow(QWidget):
 
         self.menu_bar.button_group.but_valeur_ip.clicked.connect(self.pages.show_vip_dialogue_widget)
         self.menu_bar.button_group.but_tabl_viagieres.clicked.connect(self.pages.show_rentes_viageres_dialogue_widget)
+        self.menu_bar.button_group.but_tabl_temporaires.clicked.connect(self.pages.show_rentes_temp_dialogue_widget)
 
     pass
 

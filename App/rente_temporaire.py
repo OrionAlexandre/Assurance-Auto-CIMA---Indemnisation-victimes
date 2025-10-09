@@ -1,28 +1,18 @@
-import sys
-
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QIcon, QPixmap
-from PyQt6.QtWidgets import QWidget, QApplication, QLabel, QHBoxLayout, QVBoxLayout, QListWidget, QMessageBox, QDialog, \
-    QGridLayout, QLineEdit, QComboBox, QStackedLayout, QListView, QStackedWidget, QCheckBox, QPushButton, QMenu
+from PyQt6.QtGui import QIcon, QPixmap
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QLineEdit, QComboBox, QWidget
 
-from algorithm.dead import PrejudiceEconomiqueConjoints, ControlePlafondPrejudiceEconomique, PrejudiceEconomiqueEnfants,\
-    PrejudiceMoral, ControlePlafondPrejudiceMoral
-from algorithm.profils import Enfant, Conjoint, Personne, Ascendant, Collateral
-
-from algorithm.tables import SituationMatrimoniale, AGE_LIMITE, list_pays_cima, ValeurPointIP, TableTemporaire65, TableTemporaire60, TableTemporaire55, TableTemporaire25, TableTemporaire21
-from database_manager import ajouter_personne_data_base, supprimer_et_reorganiser_ids
-from api import data_contoller
+from algorithm.profils import Personne
+from algorithm.tables import SituationMatrimoniale,  TableTemporaire65, TableTemporaire60, TableTemporaire55, TableTemporaire25, TableTemporaire21
 
 
-app = QApplication(sys.argv)
 
-
-class TableRentesPermanenteWidget(QDialog):
+class TableRentesTemporaireWidget(QDialog):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Table des rentes viagères")
-        icon = QIcon(QPixmap("assets/064-browsers.png"))
+        self.setWindowTitle("Barèmes - rentes temporaires")
+        icon = QIcon(QPixmap("assets/012-tabs.png"))
         self.setWindowIcon(icon)
         self.setModal(True)
 
@@ -234,7 +224,7 @@ class TableRentesPermanenteWidget(QDialog):
 
         choose_age_layout = QHBoxLayout()
         self.main_layout.addLayout(choose_age_layout)
-        label_ = QLabel("Age limite du paiement de la rente : ")
+        label_ = QLabel("Choisir l'âge limite du paiement des rentes : ")
         # label_.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         choose_age_layout.addWidget(label_)
         choose_age_layout.addWidget(self.entries.age_limite_entry)
@@ -400,18 +390,3 @@ class TableRentesPermanenteWidget(QDialog):
                 case 21:
                     return TableTemporaire21
             return None
-
-
-main_window = QWidget()
-main_window.setStyleSheet("""background-color: qlineargradient(
-        x1:0, y1:0, x2:1, y2:1,
-        stop:0 #B9D5F9,
-        stop:0.6 #e8f2ff,
-        stop:1 #d0e3ff
-    );""")
-main_layout = QHBoxLayout(main_window)
-main_layout.addWidget(TableRentesPermanenteWidget())
-main_window.show()
-
-if __name__ == '__main__':
-    sys.exit(app.exec())
