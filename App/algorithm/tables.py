@@ -39,7 +39,7 @@ smig_pays_cima_2025 = {
 
     "Guinée Equatoriale": 128000,
     "Mali": 40000, # 🕊️
-    "Niger": 30047, # 🕊️
+    "Niger": 42000, # 🕊️
     "Sénégal": 64223, # 🕊️
     "Tchad": 70400, # 🕊️
     "Togo": 52500

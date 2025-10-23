@@ -1,5 +1,5 @@
 from PyQt6.QtGui import QIcon, QPixmap
-from PyQt6.QtWidgets import QApplication, QWidget, QHBoxLayout, QStackedLayout, QStackedWidget, QVBoxLayout
+from PyQt6.QtWidgets import QApplication, QWidget, QHBoxLayout, QStackedLayout, QStackedWidget, QVBoxLayout, QLabel
 import sys
 from custom_widget import ButtonContainer, MenuButton
 
@@ -45,8 +45,9 @@ class MenuBar(QWidget):
 
         for button in [self.button_group.but_victime_blessee,
                        self.button_group.but_victime_decedee,
-                       self.button_group.but_groupe]:
+                       self.button_group.but_historique]: # self.button_group.but_groupe (a été retiré de la liste)
             self.widget_one.main_layout.addWidget(button)
+
 
         # Le widget des tables.
         self.widget_two = ButtonContainer(intitule="  \u2B24 Tables des données CIMA")
@@ -61,16 +62,18 @@ class MenuBar(QWidget):
         self.widget_three = ButtonContainer(intitule="  \u2B24 Autres")
         self.main_widget_layout.addWidget(self.widget_three)
 
-        for button in [self.button_group.but_historique,
-                       self.button_group.but_methodes_calcul,
+        for button in [self.button_group.but_methodes_calcul,
                        self.button_group.but_parametres]:
             self.widget_three.main_layout.addWidget(button)
+        lbl_fill = QLabel("")
+        lbl_fill.setStyleSheet("""background-color: transparent""")
+        self.widget_three.main_layout.addWidget(lbl_fill)
 
     class ButtonGroup:
         def __init__(self):
             self.but_victime_blessee = MenuButton(text="Victime blessée", icon_path="assets/028-medical.png")
             self.but_victime_decedee = MenuButton(text="Victime décédée", icon_path="assets/021-user-1.png")
-            self.but_groupe = MenuButton(text="Gestion par groupe", icon_path="assets/053-group.png")
+            # self.but_groupe = MenuButton(text="Gestion par groupe", icon_path="assets/053-group.png")
 
             self.but_valeur_ip = MenuButton(text="Valeur du point d'IP", icon_path="assets/031-pulse.png")
             self.but_tabl_temporaires = MenuButton(text="Barèmes - rentes temporaires", icon_path="assets/012-tabs.png")
@@ -160,7 +163,7 @@ class MainWindow(QWidget):
         # Rattachement des méthodes d'affichage.
         self.menu_bar.button_group.but_victime_blessee.clicked.connect(self.pages.show_victime_blessee)
         self.menu_bar.button_group.but_victime_decedee.clicked.connect(self.pages.show_victime_decedee)
-        self.menu_bar.button_group.but_groupe.clicked.connect(self.pages.show_gestion_groupe)
+        # self.menu_bar.button_group.but_groupe.clicked.connect(self.pages.show_gestion_groupe)
 
         self.menu_bar.button_group.but_valeur_ip.clicked.connect(self.pages.show_vip_dialogue_widget)
         self.menu_bar.button_group.but_tabl_viagieres.clicked.connect(self.pages.show_rentes_viageres_dialogue_widget)
