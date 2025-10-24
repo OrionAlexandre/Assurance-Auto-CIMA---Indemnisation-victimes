@@ -297,8 +297,8 @@ class NouveauProfil(QDialog):
                                               SituationMatrimoniale.MARIE_E,
                                               SituationMatrimoniale.DIVORCE,
                                               SituationMatrimoniale.VEUF_VE])
-        self.profil_pays_residence_cb.addItems(list_pays_cima)
-        self.profil_pays_sinistre_cb.addItems(list_pays_cima)
+        self.profil_pays_residence_cb.addItems(data_contoller.pays_cima_list())
+        self.profil_pays_sinistre_cb.addItems(data_contoller.pays_cima_list())
 
         # Définition des valeurs par défauts
         self.profil_nom_le.setText(self.personne.nom)
@@ -4094,9 +4094,12 @@ class VictimeBlessee(QWidget):
 
         self.__main_layout.addWidget(self.__it_ip_page, stretch=1)  # Prend tout l'espace restant
 
+        self.but_layout = QHBoxLayout()
+        self.__main_layout.addLayout(self.but_layout)
+
         # Le boutton de rajout des profils de victimes.
-        self.apercu = QPushButton("📜Générer un aperçu")
-        self.apercu.setFixedSize(250, 30)
+        self.apercu = QPushButton("📜Aperçu")
+        self.apercu.setFixedSize(100, 30)
         self.apercu.setStyleSheet("""
                                                         QPushButton {
                                                             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
@@ -4124,7 +4127,43 @@ class VictimeBlessee(QWidget):
                                                         }
                                                     """)
         self.apercu.clicked.connect(self.load_apercu)
-        self.__main_layout.addWidget(self.apercu)
+        self.but_layout.addWidget(self.apercu)
+
+        self.save_but = QPushButton("💾Enregistrer")
+        self.save_but.setFixedSize(100, 30)
+        self.save_but.setStyleSheet("""
+                                        QPushButton {
+                                            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                stop:0 #2ea44f,       /* Vert GitHub vif */
+                                                stop:1 #2c974b);      /* Vert GitHub foncé */
+                                            border: 1px solid #2ea44f;
+                                            border-radius: 6px;
+                                            color: white;
+                                            font-weight: 600;
+                                            padding: 5px;
+                                            font-size: 12px;
+                                        }
+                                        
+                                        QPushButton:hover {
+                                            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                stop:0 #34d058,       /* Vert GitHub clair (survol) */
+                                                stop:1 #2fbf4f);      /* Vert GitHub moyen */
+                                            border-color: #34d058;
+                                        }
+                                        
+                                        QPushButton:pressed {
+                                            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                stop:0 #2c974b,       /* Vert foncé */
+                                                stop:1 #268740);      /* Vert très foncé */
+                                        }
+                                            """)
+        self.but_layout.addWidget(self.save_but)
+
+        # Ajouter un stretch pour pousser vers la gauche
+        self.but_layout.addStretch()
+
+        # OU utiliser l'alignement
+        self.but_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)  # Aligne tout le contenu à gauche
 
     def load_apercu(self):
         apercu = RecapitulatifVictimeBlessee()
@@ -4187,9 +4226,12 @@ class VictimeDecedee(QWidget):
         self.repartition_ayants_droit = RepartitionAyantsDroitWidget()
         self.container_layout.addWidget(self.repartition_ayants_droit, stretch=1)
 
+        self.but_layout = QHBoxLayout()
+        self.__main_layout.addLayout(self.but_layout)
+
         # Le boutton de rajout des profils de victimes.
-        self.apercu = QPushButton("📜Générer un aperçu")
-        self.apercu.setFixedSize(250, 30)
+        self.apercu = QPushButton("📜Aperçu")
+        self.apercu.setFixedSize(100, 30)
         self.apercu.setStyleSheet("""
                                                                 QPushButton {
                                                                     background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
@@ -4217,7 +4259,43 @@ class VictimeDecedee(QWidget):
                                                                 }
                                                             """)
         self.apercu.clicked.connect(self.apercu_)
-        self.__main_layout.addWidget(self.apercu)
+        self.but_layout.addWidget(self.apercu)
+
+        self.save_but = QPushButton("💾Enregistrer")
+        self.save_but.setFixedSize(100, 30)
+        self.save_but.setStyleSheet("""
+                                                QPushButton {
+                                                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                        stop:0 #2ea44f,       /* Vert GitHub vif */
+                                                        stop:1 #2c974b);      /* Vert GitHub foncé */
+                                                    border: 1px solid #2ea44f;
+                                                    border-radius: 6px;
+                                                    color: white;
+                                                    font-weight: 600;
+                                                    padding: 5px;
+                                                    font-size: 12px;
+                                                }
+
+                                                QPushButton:hover {
+                                                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                        stop:0 #34d058,       /* Vert GitHub clair (survol) */
+                                                        stop:1 #2fbf4f);      /* Vert GitHub moyen */
+                                                    border-color: #34d058;
+                                                }
+
+                                                QPushButton:pressed {
+                                                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                        stop:0 #2c974b,       /* Vert foncé */
+                                                        stop:1 #268740);      /* Vert très foncé */
+                                                }
+                                                    """)
+        self.but_layout.addWidget(self.save_but)
+
+        # Ajouter un stretch pour pousser vers la gauche
+        self.but_layout.addStretch()
+
+        # OU utiliser l'alignement
+        self.but_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)  # Aligne tout le contenu à gauche
 
         data_contoller.add_callable_function("recreate_repartition", self.recreate_repartition)
 

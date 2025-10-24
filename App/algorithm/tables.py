@@ -5,6 +5,7 @@ de calcul.
 
 from .profils import Personne, Enfant, Conjoint, Ascendant
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 
 list_pays_cima = [
@@ -452,4 +453,37 @@ class Repartition(ABC):
     def repartition(self):
         pass
     pass
+
+
+PAYS_CIMA_PATH = Path("data", "pays_cima_dict.pkl")
+
+
+def create_pays_cima_dict(data: dict):
+    import pickle
+    PAYS_CIMA_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    print("Création du fichier contenant les pays de la cima ainsi que leurs SMIG...")
+    with open(PAYS_CIMA_PATH, "wb") as fichier:
+        pickle.dump(data, fichier)
+    pass
+
+
+def pays_cima_dict_file_exist()->bool:
+    try:
+        return PAYS_CIMA_PATH.exists()
+    except Exception as e:
+        print(e)
+
+
+def check_pays_cima_file()->bool:
+    if not pays_cima_dict_file_exist():
+        create_pays_cima_dict(smig_pays_cima_2025)
+        return True
+    return False
+
+# Appell des fonctions de création des données.
+check_pays_cima_file()
+
+
+
 

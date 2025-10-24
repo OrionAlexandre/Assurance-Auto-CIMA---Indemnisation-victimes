@@ -202,6 +202,19 @@ class DataController:
             self.save_data(key=key, value=0.0)
         pass
 
+
+    def load_pays_cima_dict(self)->dict:
+        from algorithm.tables import PAYS_CIMA_PATH
+
+        import pickle
+        print("Chargement du fichier contenant les pays de la cima ainsi que leurs SMIG...")
+        with open(PAYS_CIMA_PATH, "rb") as fichier:
+            return pickle.load(fichier)
+
+
+    def pays_cima_list(self):
+        return self.load_pays_cima_dict().keys()
+
 #=======================================================================================================================
 
 def format_nombre_fr(nombre, decimales=2):
