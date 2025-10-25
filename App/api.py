@@ -194,7 +194,7 @@ class DataController:
         pass
 
     def load_data(self, key: str):
-        return self.__data_dict.get(key)
+        return self.__data_dict.get(key, 0.0)
 
     def set_all_value_null(self):
         for key in ["frais_cumul", "indemnite_it", "indemnite_ip", "assistance_tp",
